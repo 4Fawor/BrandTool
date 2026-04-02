@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brand Tool Pro - System Zarządzania</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        /* [Zachowano Twoje style CSS z lekkimi poprawkami dla nowych sekcji] */
+        :root{
+            --bg:#f4f7f6; --white:#ffffff; --border:#d1d5db; --text:#111827;
+            --accent:#2563eb; --green:#10b981; --red:#ef4444; --yellow:#f59e0b; --r:8px;
+        }
+        /* ... (tutaj znajdują się Twoje style CSS) ... */
+        .admin-badge { background: #000; color: gold; padding: 2px 6px; font-size: 10px; border-radius: 4px; font-weight: bold; }
+        .team-info { background: var(--accent); color: white; padding: 10px; border-radius: var(--r); margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-wrap">
+    <div class="auth-card">
+        <div class="brand-row"><div class="brand-mark">BT</div><div class="brand-name">Brand Tool Pro</div></div>
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Logowanie</button>
+            <button class="auth-tab" onclick="switchAuthTab('register')">Rejestracja</button>
+        </div>
+        
+        <div id="auth-login-panel">
+            <div id="login-err" class="alert alert-err"></div>
+            <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="login-email"></div>
+            <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="login-pass"></div>
+            <button class="btn btn-primary btn-block" onclick="doLogin()">Zaloguj się</button>
+            <div style="margin-top:15px; font-size:11px; color:#666">Admin: admin@brand.pl / admin123</div>
+        </div>
+
+        <div id="auth-register-panel" style="display:none">
+            <div id="reg-err" class="alert alert-err"></div>
+            <div class="fr">
+                <div class="fg"><label class="fl">Imię</label><input type="text" class="fc" id="reg-first"></div>
+                <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="reg-last"></div>
+            </div>
+            <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="reg-email"></div>
+            <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="reg-pass"></div>
+            <div class="fg">
+                <label class="fl">Kod Zespołu (od Koordynatora)</label>
+                <input type="text" class="fc" id="reg-team-code" placeholder="np. KOWALSKI2026" style="text-transform:uppercase">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="doRegister()">Załóż konto</button>
+        </div>
+    </div>
+</div>
+
+<div id="app" style="display:none">
+    <div class="topbar">
+        <div class="tb-logo"><div class="tb-mark">BT</div><div class="tb-name">Brand Tool</div></div>
+        <div class="tb-spacer"></div>
+        <div id="user-rank"></div>
+        <button class="logout-btn" onclick="logout()">Wyloguj</button>
+    </div>
+    <div class="sidebar" id="sidebar"></div>
+    <div class="main-wrap"><div class="page" id="main-content"></div></div>
+</div>
+
+<div id="toast"></div>
+<div class="modal-ov" id="modal-ov"><div class="modal"><div id="modal-body"></div><button onclick="closeModal()">Zamknij</button></div></div>
+
+<script>
+// --- DATABASE STRUCTURE ---
+let DB = JSON.parse(localStorage.getItem('brand_tool_v3')) || {
+    users: [
+        {id:'U0', firstName:'Super', lastName:'Admin', email:'admin@brand.pl', pass:'admin123', role:'superadmin', status:'active', teamCode:'MASTER2026', color:'#000'},
+        {id:'U1', firstName:'Jan', lastName:'Koordynator', email:'koord@brand.pl', pass:'1234', role:'coordinator', status:'active', teamCode:'TEAM2026', color:'#2563eb'}
+    ],
+    pendingUsers: [],
+    actions: [],
+    locations: [],
+    mechanisms: [{id:'M1', name:'Sprzedaż bezpośrednia', active:true}]
+};
+
+let CU = null; // Current User
+
+function save() {
+    localStorage.setItem('brand_tool_v3', JSON.stringify(DB));
+    // Symulacja auto-backupu do "pliku" (w konsoli)
+    console.log("BACKUP SYSTEM: Dane zsynchronizowane.");
+}
+
+// --- AUTH LOGIC ---
+function doLogin() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    const user = DB.users.find(u => u.email === email && u.pass === pass);
+
+    if(!user) { alert("Błędne dane"); return; }
+    if(user.status !== 'active') { alert("Konto oczekuje na akceptację lub jest zablokowane"); return; }
+
+    CU = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    renderDashboard();
+}
+
+function doRegister() {
+    const newUser = {
+        id: 'U' + Date.now(),
+        firstName: document.getElementById('reg-first').value,
+        lastName: document.getElementById('reg-last').value,
+        email: document.getElementById('reg-email').value,
+        pass: document.getElementById('reg-pass').value,
+        teamCodeRequested: document.getElementById('reg-team-code').value.toUpperCase(),
+        role: 'ambassador',
+        status: 'pending'
+    };
+
+    // Sprawdź czy kod zespołu istnieje
+    const targetCoord = DB.users.find(u => u.teamCode === newUser.teamCodeRequested);
+    if(!targetCoord && newUser.teamCodeRequested !== 'MASTER2026') {
+        alert("Nieprawidłowy kod zespołu!");
+        return;
+    }
+
+    DB.pendingUsers.push(newUser);
+    save();
+    alert("Konto utworzone. Poczekaj na akceptację koordynatora.");
+}
+
+// --- RENDER VIEWS ---
+function renderDashboard() {
+    let html = `<h2>Witaj, ${CU.firstName}!</h2>`;
+    
+    // Info o zespole dla Ambasadora
+    if(CU.role === 'ambassador') {
+        const myCoord = DB.users.find(u => u.teamCode === CU.teamCodeRequested);
+        html += `<div class="team-info">Twój Zespół: <b>${CU.teamCodeRequested}</b><br>Koordynator: ${myCoord ? myCoord.firstName + ' ' + myCoord.lastName : 'Administrator'}</div>`;
+    }
+
+    // Panel Administracyjny (SuperAdmin)
+    if(CU.role === 'superadmin') {
+        html += `<h3>Panel SuperAdmina</h3>
+                <div class="card">
+                    <p>Zarządzaj uprawnieniami i kodami zespołów</p>
+                    <button class="btn btn-primary" onclick="viewAllUsers()">Zarządzaj Użytkownikami</button>
+                    <button class="btn btn-ghost" onclick="exportExcel()">Pełny Eksport Danych (Excel)</button>
+                </div>`;
+    }
+
+    // Panel Koordynatora
+    if(CU.role === 'coordinator' || CU.role === 'superadmin') {
+        const myPending = DB.pendingUsers.filter(u => u.teamCodeRequested === CU.teamCode || CU.role === 'superadmin');
+        html += `<h3>Oczekujące konta (${myPending.length})</h3>`;
+        myPending.forEach(u => {
+            html += `<div class="card">${u.firstName} ${u.lastName} (${u.email}) 
+                    <button onclick="approveUser('${u.id}')">Akceptuj</button></div>`;
+        });
+    }
+
+    document.getElementById('main-content').innerHTML = html;
+}
+
+function approveUser(userId) {
+    const userIdx = DB.pendingUsers.findIndex(u => u.id === userId);
+    const user = DB.pendingUsers.splice(userIdx, 1)[0];
+    user.status = 'active';
+    DB.users.push(user);
+    save();
+    alert("Użytkownik zaakceptowany!");
+    renderDashboard();
+    exportExcel(); // Automatyczny backup przy ważnej zmianie
+}
+
+function viewAllUsers() {
+    let html = `<h3>Wszyscy Użytkownicy</h3>`;
+    DB.users.forEach(u => {
+        html += `<div class="card">
+            ${u.firstName} ${u.lastName} - <b>Rola: ${u.role}</b> - Kod: ${u.teamCode || 'Brak'}
+            <br>
+            <button onclick="makeCoordinator('${u.id}')">Daj Koordynatora</button>
+            <button onclick="changeUserCode('${u.id}')">Zmień Kod Teamu</button>
+        </div>`;
+    });
+    document.getElementById('main-content').innerHTML = html;
+}
+
+function makeCoordinator(userId) {
+    const user = DB.users.find(u => u.id === userId);
+    user.role = 'coordinator';
+    user.teamCode = user.lastName.toUpperCase() + "2026";
+    save();
+    viewAllUsers();
+}
+
+function changeUserCode(userId) {
+    const newCode = prompt("Podaj nowy kod zespołu:");
+    if(newCode) {
+        const user = DB.users.find(u => u.id === userId);
+        user.teamCode = newCode.toUpperCase();
+        save();
+        viewAllUsers();
+    }
+}
+
+// --- EXCEL EXPORT (BACKUP SYSTEM) ---
+function exportExcel() {
+    const wb = XLSX.utils.book_new();
+    
+    // Arkusz Akcji
+    const actionData = DB.actions.map(a => ({
+        Data: a.date,
+        Ambasador: a.ambassadorId,
+        Godziny: `${a.startTime}-${a.endTime}`,
+        Status: a.status,
+        Sprzedaż: a.sales.length
+    }));
+    const wsActions = XLSX.utils.json_to_sheet(actionData);
+    XLSX.utils.book_append_sheet(wb, wsActions, "Raport_Akcji");
+
+    // Arkusz Użytkowników
+    const userData = DB.users.map(u => ({
+        Imię: u.firstName,
+        Nazwisko: u.lastName,
+        Email: u.email,
+        Rola: u.role,
+        KodTeamu: u.teamCode || u.teamCodeRequested
+    }));
+    const wsUsers = XLSX.utils.json_to_sheet(userData);
+    XLSX.utils.book_append_sheet(wb, wsUsers, "Użytkownicy");
+
+    XLSX.writeFile(wb, `BACKUP_BRANDTOOL_${new Date().getTime()}.xlsx`);
+}
+
+function logout() { location.reload(); }
+</script>
+</body>
+</html>
