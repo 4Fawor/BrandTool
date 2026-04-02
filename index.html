@@ -1,236 +1,964 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Brand Tool Pro - System Zarządzania</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <style>
-        /* [Zachowano Twoje style CSS z lekkimi poprawkami dla nowych sekcji] */
-        :root{
-            --bg:#f4f7f6; --white:#ffffff; --border:#d1d5db; --text:#111827;
-            --accent:#2563eb; --green:#10b981; --red:#ef4444; --yellow:#f59e0b; --r:8px;
-        }
-        /* ... (tutaj znajdują się Twoje style CSS) ... */
-        .admin-badge { background: #000; color: gold; padding: 2px 6px; font-size: 10px; border-radius: 4px; font-weight: bold; }
-        .team-info { background: var(--accent); color: white; padding: 10px; border-radius: var(--r); margin-bottom: 15px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Brand Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f0f0;
+  --bg2:#e8e8e8;
+  --white:#ffffff;
+  --border:#c8c8c8;
+  --border2:#b0b0b0;
+  --text:#1a1a1a;
+  --text2:#505050;
+  --muted:#888888;
+  --accent:#2563eb;
+  --accent-l:#eff6ff;
+  --accent-d:#1d4ed8;
+  --green:#16a34a;
+  --green-l:#f0fdf4;
+  --red:#dc2626;
+  --red-l:#fef2f2;
+  --yellow:#d97706;
+  --yellow-l:#fffbeb;
+  --r:4px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --topbar-h:52px;
+  --nav-h:58px;
+  --sidebar-w:200px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100%;font-size:13px;line-height:1.5;}
+button,select,input,textarea{font-family:var(--font);font-size:13px;}
+img{max-width:100%;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);}
+.auth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;max-width:400px;}
+.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.brand-mark{width:32px;height:32px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;letter-spacing:-.3px;}
+.brand-name{font-size:18px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
+.auth-hint{font-size:12px;color:var(--muted);margin-bottom:22px;padding-left:42px;}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.auth-tab{flex:1;padding:8px 12px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* FORMS */
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+.fc{width:100%;background:var(--white);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:var(--r);font-size:13px;transition:border-color .15s;-webkit-appearance:none;}
+.fc:focus{outline:none;border-color:var(--accent);}
+.fc::placeholder{color:var(--muted);}
+.fc[disabled]{opacity:.5;cursor:not-allowed;background:var(--bg);}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fhint{font-size:11px;color:var(--muted);margin-top:3px;}
+.f-static{padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;color:var(--text2);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 14px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap;}
+.btn:active{opacity:.85;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover:not(:disabled){background:var(--accent-d);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover:not(:disabled){background:#15803d;}
+.btn-red{background:var(--red);color:#fff;}.btn-red:hover:not(:disabled){background:#b91c1c;}
+.btn-ghost{background:var(--white);border:1px solid var(--border);color:var(--text2);}.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11px;}
+.btn-block{width:100%;justify-content:center;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+/* ALERTS */
+.alert{padding:9px 11px;border-radius:var(--r);font-size:12px;margin-bottom:11px;display:none;line-height:1.4;border-left:3px solid;}
+.alert.show{display:block;}
+.alert-err{background:var(--red-l);color:var(--red);border-color:var(--red);}
+.alert-info{background:var(--yellow-l);color:var(--yellow);border-color:var(--yellow);}
+.alert-ok{background:var(--green-l);color:var(--green);border-color:var(--green);}
+
+/* APP SHELL */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{position:sticky;top:0;z-index:200;height:var(--topbar-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;}
+.tb-logo{display:flex;align-items:center;gap:8px;}
+.tb-mark{width:24px;height:24px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.tb-name{font-size:14px;font-weight:700;color:var(--text);}
+.tb-spacer{flex:1;}
+.tb-right{display:flex;align-items:center;gap:6px;}
+.tb-username{font-size:12px;font-weight:500;color:var(--text2);}
+@media(max-width:480px){.tb-username{display:none;}}
+.av{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;border:1px solid var(--border);}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--text2);padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;transition:all .12s;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.notif-btn{position:relative;background:none;border:1px solid var(--border);width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .12s;color:var(--text2);}
+.notif-btn:hover{border-color:var(--accent);}
+.notif-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1px solid var(--white);}
+
+/* SIDEBAR */
+.sidebar{display:none;position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--border);padding:10px 8px;overflow-y:auto;z-index:100;}
+.snav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:6px 8px 3px;}
+.snav-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:7px 8px;cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;text-align:left;margin-bottom:1px;transition:all .12s;}
+.snav-btn:hover{background:var(--bg);color:var(--text);}
+.snav-btn.active{background:var(--accent-l);color:var(--accent);font-weight:700;}
+.snav-ico{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.snav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+@media(min-width:768px){.sidebar{display:block;}.bnav{display:none!important;}.main-wrap{margin-left:var(--sidebar-w);}}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--white);border-top:1px solid var(--border);display:flex;padding:4px 6px calc(4px + env(safe-area-inset-bottom));}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;cursor:pointer;padding:4px 2px;color:var(--muted);font-size:9px;font-weight:600;position:relative;}
+.bnav-btn.active{color:var(--accent);}
+.bnav-ico{font-size:18px;line-height:1.2;}
+.bnav-bdg{position:absolute;top:1px;right:10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;min-width:15px;text-align:center;}
+
+/* CONTENT */
+.main-wrap{padding-bottom:calc(var(--nav-h) + 8px);}
+@media(min-width:768px){.main-wrap{padding-bottom:20px;}}
+.page{max-width:860px;margin:0 auto;padding:16px 12px;}
+@media(min-width:600px){.page{padding:20px 18px;}}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);padding:16px;}
+.card+.card{margin-top:12px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+
+/* SECTION */
+.section-hd{margin-bottom:16px;}
+.page-title{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.page-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.hd-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+@media(min-width:500px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:800px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
+.stat-card{background:var(--white);border:1px solid var(--border);padding:12px 14px;}
+.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;}
+.stat-val{font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:var(--mono);}
+.stat-s{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.wk-btn{background:var(--white);border:1px solid var(--border);color:var(--text);padding:6px 11px;cursor:pointer;font-size:12px;font-weight:600;transition:all .12s;}
+.wk-btn:hover{border-color:var(--accent);color:var(--accent);}
+.wk-lbl{flex:1;font-size:12px;font-weight:600;color:var(--text2);}
+.wk-tag{display:inline-flex;padding:2px 8px;background:var(--accent-l);color:var(--accent);font-size:10px;font-weight:700;border:1px solid #bfdbfe;}
+.wk-tag.next{background:var(--yellow-l);color:var(--yellow);border-color:#fde68a;}
+
+/* CALENDAR */
+.cal-list{display:flex;flex-direction:column;gap:8px;}
+.cal-day{background:var(--white);border:1px solid var(--border);}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);}
+.cal-hd.today-hd{background:var(--accent-l);border-bottom-color:#bfdbfe;}
+.cal-hd-l{display:flex;align-items:center;gap:8px;}
+.cal-num{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:1px solid var(--border);flex-shrink:0;background:var(--white);}
+.cal-num.today{background:var(--accent);color:#fff;border-color:var(--accent);}
+.cal-day-name{font-size:13px;font-weight:600;}
+.cal-day-date{font-size:10px;color:var(--muted);}
+.cal-slots{padding:6px 10px;display:flex;flex-direction:column;gap:5px;}
+.cal-empty{padding:10px 12px;text-align:center;font-size:12px;color:var(--muted);}
+
+/* SLOT */
+.slot{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:border-color .12s;border-left-width:3px;}
+.slot:hover{border-color:var(--accent);}
+.slot.s-pending{border-left-color:var(--yellow);}
+.slot.s-approved{border-left-color:var(--green);}
+.slot.s-rejected{border-left-color:var(--red);opacity:.65;}
+.slot.s-active{border-left-color:var(--accent);background:var(--accent-l);}
+.slot-body{flex:1;min-width:0;}
+.slot-loc{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slot-type{font-size:10px;color:var(--muted);}
+.slot-meta{display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;}
+.slot-time{font-size:11px;color:var(--text2);font-family:var(--mono);}
+.slot-sales-ct{font-size:11px;color:var(--green);font-weight:700;}
+.slot-amb{font-size:10px;font-weight:700;}
+.slot-st{font-size:10px;color:var(--muted);}
+.live-tag{font-size:9px;font-weight:700;color:var(--accent);background:var(--white);border:1px solid var(--accent);padding:1px 5px;flex-shrink:0;}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;align-items:flex-end;justify-content:center;}
+@media(min-width:600px){.modal-ov{align-items:center;}}
+.modal-ov.open{display:flex;}
+.modal{background:var(--white);border-top:1px solid var(--border);padding:18px 16px calc(16px + env(safe-area-inset-bottom));width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .18s ease;}
+@media(min-width:600px){.modal{border:1px solid var(--border);max-width:460px;padding:22px;animation:slideUp2 .16s ease;}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideUp2{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:14px;font-weight:700;}
+.modal-close{background:var(--bg);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+
+/* DETAIL */
+.dbox{background:var(--bg);border:1px solid var(--border);padding:10px 12px;margin-bottom:12px;}
+.drow{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;font-size:12px;}
+.drow+.drow{border-top:1px solid var(--border);}
+.dk2{color:var(--muted);flex-shrink:0;margin-right:10px;}
+.dv{font-weight:600;text-align:right;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid;}
+.badge::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0;}
+.bdp{background:var(--yellow-l);color:var(--yellow);border-color:#fde68a;}.bdp::before{background:var(--yellow);}
+.bda{background:var(--green-l);color:var(--green);border-color:#bbf7d0;}.bda::before{background:var(--green);}
+.bdr{background:var(--red-l);color:var(--red);border-color:#fecaca;}.bdr::before{background:var(--red);}
+.bdx{background:var(--accent-l);color:var(--accent);border-color:#bfdbfe;}.bdx::before{background:var(--accent);}
+
+/* TIMER */
+.timer-card{background:var(--accent);color:#fff;padding:16px;margin-bottom:14px;border-left:4px solid var(--accent-d);}
+.tc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.75;margin-bottom:3px;display:flex;align-items:center;gap:5px;}
+.tc-dot{width:6px;height:6px;background:#ff6b6b;border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.tc-loc{font-size:12px;font-weight:500;opacity:.85;margin-bottom:8px;}
+.tc-timer{font-family:var(--mono);font-size:40px;font-weight:500;letter-spacing:1px;margin-bottom:12px;line-height:1;}
+.tc-sc-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.tc-sc-val{font-family:var(--mono);font-size:20px;font-weight:700;}
+.tc-sc-lbl{font-size:11px;opacity:.7;}
+.tc-add-sale{width:100%;padding:9px;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .12s;margin-bottom:6px;}
+.tc-add-sale:hover{background:rgba(255,255,255,.28);}
+.tc-end{width:100%;padding:7px;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;}
+.tc-end:hover{background:rgba(255,255,255,.18);}
+
+/* SALE ITEMS */
+.sale-item{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);margin-bottom:5px;}
+.sale-receipt{width:38px;height:38px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;}
+.sale-no-img{width:38px;height:38px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--muted);}
+.sale-mech{font-size:12px;font-weight:700;}
+.sale-meta{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.reg-tag{padding:1px 5px;font-size:10px;font-weight:700;border:1px solid;}
+.reg-yes{background:var(--green-l);color:var(--green);border-color:#bbf7d0;}
+.reg-no{background:var(--bg2);color:var(--muted);border-color:var(--border);}
+
+/* PHOTO */
+.photo-area{border:2px dashed var(--border2);padding:14px;text-align:center;cursor:pointer;transition:all .12s;position:relative;overflow:hidden;background:var(--bg);}
+.photo-area:hover{border-color:var(--accent);}
+.photo-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+#photo-preview{width:100%;max-height:140px;object-fit:cover;margin-top:8px;display:none;}
+
+/* TOGGLE */
+.toggle-row{display:flex;gap:6px;}
+.tog-opt{flex:1;padding:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .12s;color:var(--muted);}
+.tog-opt.sel{border-color:var(--green);background:var(--green-l);color:var(--green);}
+
+/* TABLE */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:420px;}
+th{text-align:left;padding:7px 9px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border);background:var(--bg);white-space:nowrap;}
+td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border:none;}
+tbody tr:hover td{background:var(--bg);}
+tr.clickable{cursor:pointer;}
+
+/* MISC */
+.qa-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.ap-row{padding:9px 0;border-bottom:1px solid var(--border);}
+.ap-row:last-child{border:none;}
+.ap-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.ap-title{font-size:12px;font-weight:700;}
+.ap-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.ap-btns{display:flex;gap:5px;flex-shrink:0;}
+.locked-bar{background:var(--yellow-l);border:1px solid #fde68a;border-left:3px solid var(--yellow);color:var(--yellow);padding:8px 11px;font-size:12px;margin-bottom:12px;}
+.next-card{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px;margin-bottom:12px;}
+.acc-row{background:var(--white);border:1px solid var(--border);padding:12px;margin-bottom:8px;}
+.acc-name{font-size:13px;font-weight:700;}
+.acc-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.acc-btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 8px);left:50%;transform:translateX(-50%) translateY(12px);z-index:9999;background:var(--text);color:#fff;padding:8px 16px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transition:all .24s;pointer-events:none;max-width:90vw;text-align:center;}
+@media(min-width:768px){#toast{bottom:14px;}}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.tok{background:var(--text);}
+#toast.terr{background:var(--red);}
+#toast.twarn{background:var(--yellow);color:#fff;}
+#toast.tgreen{background:var(--green);}
+
+@media print{.topbar,.bnav,.sidebar,.btn,#toast,.modal-ov{display:none!important;}.main-wrap{margin:0!important;}}
+</style>
 </head>
 <body>
 
+<!-- AUTH -->
 <div id="auth-screen" class="auth-wrap">
-    <div class="auth-card">
-        <div class="brand-row"><div class="brand-mark">BT</div><div class="brand-name">Brand Tool Pro</div></div>
-        <div class="auth-tabs">
-            <button class="auth-tab active" onclick="switchAuthTab('login')">Logowanie</button>
-            <button class="auth-tab" onclick="switchAuthTab('register')">Rejestracja</button>
-        </div>
-        
-        <div id="auth-login-panel">
-            <div id="login-err" class="alert alert-err"></div>
-            <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="login-email"></div>
-            <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="login-pass"></div>
-            <button class="btn btn-primary btn-block" onclick="doLogin()">Zaloguj się</button>
-            <div style="margin-top:15px; font-size:11px; color:#666">Admin: admin@brand.pl / admin123</div>
-        </div>
-
-        <div id="auth-register-panel" style="display:none">
-            <div id="reg-err" class="alert alert-err"></div>
-            <div class="fr">
-                <div class="fg"><label class="fl">Imię</label><input type="text" class="fc" id="reg-first"></div>
-                <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="reg-last"></div>
-            </div>
-            <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="reg-email"></div>
-            <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="reg-pass"></div>
-            <div class="fg">
-                <label class="fl">Kod Zespołu (od Koordynatora)</label>
-                <input type="text" class="fc" id="reg-team-code" placeholder="np. KOWALSKI2026" style="text-transform:uppercase">
-            </div>
-            <button class="btn btn-primary btn-block" onclick="doRegister()">Załóż konto</button>
-        </div>
+  <div class="auth-card">
+    <div class="brand-row"><div class="brand-mark">BT</div><div class="brand-name">Brand Tool</div></div>
+    <div class="auth-hint">Platform dla ambasadorow marki</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Logowanie</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Rejestracja</button>
     </div>
+    <div id="auth-login-panel">
+      <div id="login-err" class="alert alert-err"></div>
+      <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="login-email" placeholder="twoj@email.pl" autocomplete="email"></div>
+      <div class="fg"><label class="fl">Haslo</label><input type="password" class="fc" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">Zaloguj sie</button>
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted)">Demo: <strong>koord@brand.pl</strong> / <strong>1234</strong></div>
+    </div>
+    <div id="auth-register-panel" style="display:none">
+      <div id="reg-err" class="alert alert-err"></div>
+      <div id="reg-ok" class="alert alert-ok"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Imie</label><input type="text" class="fc" id="reg-first" placeholder="Anna"></div>
+        <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="reg-last" placeholder="Nowak"></div>
+      </div>
+      <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="reg-email" placeholder="twoj@email.pl"></div>
+      <div class="fg"><label class="fl">Haslo</label><input type="password" class="fc" id="reg-pass" placeholder="min. 6 znakow"></div>
+      <div class="fg"><label class="fl">Koordynator</label><select class="fc" id="reg-sv"><option value="">Wybierz koordynatora...</option></select></div>
+      <div class="fg"><label class="fl">Kod dostepu</label><input type="text" class="fc" id="reg-code" placeholder="np. TEAM2024" style="text-transform:uppercase"></div>
+      <div class="fhint" style="margin-top:-8px;margin-bottom:12px">Kod otrzymujesz od koordynatora. Konto wymaga zatwierdzenia.</div>
+      <button class="btn btn-primary btn-block" onclick="doRegister()">Utworz konto</button>
+    </div>
+  </div>
 </div>
 
-<div id="app" style="display:none">
-    <div class="topbar">
-        <div class="tb-logo"><div class="tb-mark">BT</div><div class="tb-name">Brand Tool</div></div>
-        <div class="tb-spacer"></div>
-        <div id="user-rank"></div>
-        <button class="logout-btn" onclick="logout()">Wyloguj</button>
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-logo"><div class="tb-mark">BT</div><div class="tb-name">Brand Tool</div></div>
+    <div class="tb-spacer"></div>
+    <div class="tb-right">
+      <button class="notif-btn" id="notif-btn" onclick="showPanel('notifications')" title="Powiadomienia">
+        [!]<span class="notif-dot" id="notif-dot" style="display:none"></span>
+      </button>
+      <div class="av" id="topbar-av"></div>
+      <span class="tb-username" id="topbar-nm"></span>
+      <button class="logout-btn" onclick="logout()">Wyloguj</button>
     </div>
-    <div class="sidebar" id="sidebar"></div>
-    <div class="main-wrap"><div class="page" id="main-content"></div></div>
+  </div>
+  <div class="sidebar" id="sidebar"></div>
+  <div class="bnav" id="bnav"></div>
+  <div class="main-wrap"><div class="page" id="main-content"></div></div>
 </div>
 
 <div id="toast"></div>
-<div class="modal-ov" id="modal-ov"><div class="modal"><div id="modal-body"></div><button onclick="closeModal()">Zamknij</button></div></div>
+
+<div class="modal-ov" id="modal-ov" onclick="closeModalBg(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-hd">
+      <div class="modal-title" id="modal-ttl"></div>
+      <button class="modal-close" onclick="closeModal()">X</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
 
 <script>
-// --- DATABASE STRUCTURE ---
-let DB = JSON.parse(localStorage.getItem('brand_tool_v3')) || {
-    users: [
-        {id:'U0', firstName:'Super', lastName:'Admin', email:'admin@brand.pl', pass:'admin123', role:'superadmin', status:'active', teamCode:'MASTER2026', color:'#000'},
-        {id:'U1', firstName:'Jan', lastName:'Koordynator', email:'koord@brand.pl', pass:'1234', role:'coordinator', status:'active', teamCode:'TEAM2026', color:'#2563eb'}
-    ],
-    pendingUsers: [],
-    actions: [],
-    locations: [],
-    mechanisms: [{id:'M1', name:'Sprzedaż bezpośrednia', active:true}]
+const LS_KEY='brandtool_v2';
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}}
+function loadDB(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r);}catch(e){}return null;}
+
+const ACCESS_CODE='TEAM2024';
+const SHOP_TYPES=['Zabka','Biedronka','Lidl','Rossmann','Empik','Carrefour','Action','Media Markt','Inne','Akcja Lotna'];
+
+let DB={
+  users:[
+    {id:'U1',firstName:'Kamila',lastName:'Kowalska',email:'koord@brand.pl',pass:'1234',role:'coordinator',svId:null,status:'active',color:'#2563eb',createdAt:Date.now()-9e8},
+    {id:'U2',firstName:'Anna',lastName:'Nowak',email:'anna@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#2563eb',createdAt:Date.now()-7e8},
+    {id:'U3',firstName:'Marta',lastName:'Wisniewska',email:'marta@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#16a34a',createdAt:Date.now()-6e8},
+    {id:'U4',firstName:'Piotr',lastName:'Zajac',email:'piotr@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#d97706',createdAt:Date.now()-5e8},
+  ],
+  pendingAccounts:[],
+  locations:[
+    {id:'L1',address:'ul. Woloska 12, Warszawa',shopType:'Zabka',note:''},
+    {id:'L2',address:'Al. Jerozolimskie 44, Warszawa',shopType:'Biedronka',note:''},
+    {id:'L3',address:'ul. Marszalkowska 5, Warszawa',shopType:'Akcja Lotna',note:''},
+  ],
+  mechanisms:[
+    {id:'M1',name:'Probka produktu',active:true},
+    {id:'M2',name:'Karta lojalnosciowa',active:true},
+    {id:'M3',name:'Rejestracja aplikacji',active:true},
+  ],
+  actions:[],
+  nextId:100,
 };
 
-let CU = null; // Current User
+const DAYS=['Poniedzialek','Wtorek','Sroda','Czwartek','Piatek','Sobota','Niedziela'];
+function uid(){const id='X'+(DB.nextId++);save();return id;}
+function getMon(off=0){const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);const m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);m.setDate(m.getDate()+off*7);return m;}
+function getWeek(off=0){const m=getMon(off);return Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(d.getDate()+i);return d;});}
+function dk(d){return d.toISOString().slice(0,10);}
+function fmtD(d){return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function isToday(d){return dk(d)===dk(new Date());}
+function t2m(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function diffH(s,e){return(t2m(e)-t2m(s))/60;}
+function fmtSec(s){return`${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`;}
+function pad(n){return String(n).padStart(2,'0');}
+function nowStr(){const n=new Date();return`${pad(n.getHours())}:${pad(n.getMinutes())}`;}
+function getU(id){return DB.users.find(u=>u.id===id);}
+function getL(id){return DB.locations.find(l=>l.id===id);}
+function getM(id){return DB.mechanisms.find(m=>m.id===id);}
+function fullName(u){return u?u.firstName+' '+u.lastName:'?';}
+function ini(u){return u?(u.firstName[0]+u.lastName[0]).toUpperCase():'?';}
+function slbl(s,active){if(active)return'Aktywna';return{pending:'Oczekuje',approved:'Zatwierdzona',rejected:'Odrzucona'}[s]||s;}
+function sdc(s,active){return active?'x':s==='pending'?'p':s==='approved'?'a':'r';}
+function bdcls(s,active){return active?'bdx':s==='pending'?'bdp':s==='approved'?'bda':'bdr';}
+function canEditNextWeek(){return new Date().getDay()>=3;}
 
-function save() {
-    localStorage.setItem('brand_tool_v3', JSON.stringify(DB));
-    // Symulacja auto-backupu do "pliku" (w konsoli)
-    console.log("BACKUP SYSTEM: Dane zsynchronizowane.");
+function toast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className='show t'+type;clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3200);}
+
+let CU=null,weekOff=0,timerInt=null,saleRegVal=true,salePhotoData=null,currentPanel='';
+
+/* AUTH */
+function switchAuthTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('auth-login-panel').style.display=tab==='login'?'block':'none';
+  document.getElementById('auth-register-panel').style.display=tab==='register'?'block':'none';
+  if(tab==='register')populateSVSelect();
+}
+function populateSVSelect(){
+  const sel=document.getElementById('reg-sv');if(!sel)return;
+  const coords=DB.users.filter(u=>u.role==='coordinator'&&u.status==='active');
+  sel.innerHTML=`<option value="">Wybierz koordynatora...</option>`+coords.map(c=>`<option value="${c.id}">${fullName(c)}</option>`).join('');
+}
+function doLogin(){
+  const email=document.getElementById('login-email').value.trim().toLowerCase();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-err');
+  err.className='alert alert-err';
+  const u=DB.users.find(u=>u.email.toLowerCase()===email&&u.pass===pass);
+  if(!u){err.innerHTML='Nieprawidlowy e-mail lub haslo';err.className='alert alert-err show';return;}
+  if(u.status==='pending'){err.innerHTML='Konto czeka na zatwierdzenie przez koordynatora';err.className='alert alert-err show';return;}
+  if(u.status==='blocked'){err.innerHTML='Konto zostalo zablokowane — skontaktuj sie z koordynatorem';err.className='alert alert-err show';return;}
+  CU=u;
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+  const av=document.getElementById('topbar-av');
+  av.textContent=ini(CU);av.style.cssText=`background:${CU.color}18;color:${CU.color};border:1px solid ${CU.color}40`;
+  document.getElementById('topbar-nm').textContent=fullName(CU);
+  buildNav();updateNotifDot();
+  showPanel(CU.role==='coordinator'?'coord-dashboard':'amb-dashboard');
+}
+function doRegister(){
+  const first=document.getElementById('reg-first').value.trim();
+  const last=document.getElementById('reg-last').value.trim();
+  const email=document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass=document.getElementById('reg-pass').value;
+  const svId=document.getElementById('reg-sv').value;
+  const code=document.getElementById('reg-code').value.trim().toUpperCase();
+  const err=document.getElementById('reg-err');const ok=document.getElementById('reg-ok');
+  err.className='alert alert-err';ok.className='alert alert-ok';
+  if(!first||!last){err.innerHTML='Podaj imie i nazwisko';err.className='alert alert-err show';return;}
+  if(!email||!email.includes('@')){err.innerHTML='Podaj prawidlowy e-mail';err.className='alert alert-err show';return;}
+  if(pass.length<6){err.innerHTML='Haslo musi miec min. 6 znakow';err.className='alert alert-err show';return;}
+  if(!svId){err.innerHTML='Wybierz koordynatora';err.className='alert alert-err show';return;}
+  if(code!==ACCESS_CODE){err.innerHTML='Nieprawidlowy kod dostepu';err.className='alert alert-err show';return;}
+  if(DB.users.find(u=>u.email.toLowerCase()===email)){err.innerHTML='Ten e-mail jest juz zarejestrowany';err.className='alert alert-err show';return;}
+  DB.pendingAccounts.push({id:'PA'+Date.now(),firstName:first,lastName:last,email,pass,role:'ambassador',svId,status:'pending',color:'#2563eb',createdAt:Date.now()});
+  save();updateNotifDot();
+  ok.innerHTML='Konto zostalo utworzone i czeka na zatwierdzenie przez koordynatora.';ok.className='alert alert-ok show';
+  ['reg-first','reg-last','reg-email','reg-pass','reg-code'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function logout(){
+  CU=null;weekOff=0;if(timerInt){clearInterval(timerInt);timerInt=null;}
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-err').className='alert alert-err';
 }
 
-// --- AUTH LOGIC ---
-function doLogin() {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-    const user = DB.users.find(u => u.email === email && u.pass === pass);
+/* NAV */
+const AMB_TABS=[{id:'amb-dashboard',ico:'H',lbl:'Dashboard'},{id:'amb-actions',ico:'A',lbl:'Akcje'},{id:'amb-schedule',ico:'K',lbl:'Grafik'},{id:'amb-stats',ico:'S',lbl:'Statystyki'}];
+const COORD_TABS=[{id:'coord-dashboard',ico:'H',lbl:'Dashboard'},{id:'coord-schedule',ico:'K',lbl:'Grafik'},{id:'coord-approvals',ico:'Z',lbl:'Zatwierdzenia'},{id:'coord-accounts',ico:'U',lbl:'Konta'},{id:'coord-team',ico:'T',lbl:'Zespol'},{id:'coord-mechanisms',ico:'M',lbl:'Mechanizmy'},{id:'coord-report',ico:'R',lbl:'Raport'}];
 
-    if(!user) { alert("Błędne dane"); return; }
-    if(user.status !== 'active') { alert("Konto oczekuje na akceptację lub jest zablokowane"); return; }
-
-    CU = user;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    renderDashboard();
+function buildNav(){
+  const tabs=CU.role==='coordinator'?COORD_TABS:AMB_TABS;
+  const pAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id).length;
+  const pAct=DB.actions.filter(a=>a.status==='pending').length;
+  document.getElementById('bnav').innerHTML=tabs.slice(0,4).map(t=>{
+    const bdg=(t.id==='coord-accounts'&&pAcc)||(t.id==='coord-approvals'&&pAct)?`<span class="bnav-bdg">${t.id==='coord-accounts'?pAcc:pAct}</span>`:'';
+    return`<button class="bnav-btn" id="bn-${t.id}" onclick="showPanel('${t.id}')"><span class="bnav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
+  }).join('');
+  let s=`<div class="snav-section">Menu</div>`;
+  tabs.forEach(t=>{
+    const bdg=(t.id==='coord-accounts'&&pAcc)||(t.id==='coord-approvals'&&pAct)?`<span class="snav-badge">${t.id==='coord-accounts'?pAcc:pAct}</span>`:'';
+    s+=`<button class="snav-btn" id="sn-${t.id}" onclick="showPanel('${t.id}')"><span class="snav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
+  });
+  s+=`<div class="snav-section" style="margin-top:8px">Eksport</div>`;
+  s+=`<button class="snav-btn" onclick="exportExcel()"><span class="snav-ico">X</span>Pobierz Excel</button>`;
+  document.getElementById('sidebar').innerHTML=s;
+}
+function setNav(id){
+  document.querySelectorAll('.bnav-btn,.snav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('bn-'+id)?.classList.add('active');
+  document.getElementById('sn-'+id)?.classList.add('active');
+}
+function updateNotifDot(){
+  const count=DB.pendingAccounts.filter(p=>CU&&p.svId===CU.id).length;
+  const dot=document.getElementById('notif-dot');
+  if(dot)dot.style.display=count>0?'block':'none';
+}
+function showPanel(id){
+  currentPanel=id;setNav(id);buildNav();updateNotifDot();
+  const renders={'amb-dashboard':renderAmbDashboard,'amb-actions':renderAmbActions,'amb-schedule':renderAmbSchedule,'amb-stats':renderAmbStats,'coord-dashboard':renderCoordDashboard,'coord-schedule':renderCoordSchedule,'coord-approvals':renderCoordApprovals,'coord-accounts':renderCoordAccounts,'coord-team':renderCoordTeam,'coord-mechanisms':renderCoordMechanisms,'coord-report':renderCoordReport,'notifications':renderNotifications};
+  document.getElementById('main-content').innerHTML=(renders[id]||(() => ''))();
+  if(timerInt)checkTimer();
+  window.scrollTo(0,0);
 }
 
-function doRegister() {
-    const newUser = {
-        id: 'U' + Date.now(),
-        firstName: document.getElementById('reg-first').value,
-        lastName: document.getElementById('reg-last').value,
-        email: document.getElementById('reg-email').value,
-        pass: document.getElementById('reg-pass').value,
-        teamCodeRequested: document.getElementById('reg-team-code').value.toUpperCase(),
-        role: 'ambassador',
-        status: 'pending'
-    };
-
-    // Sprawdź czy kod zespołu istnieje
-    const targetCoord = DB.users.find(u => u.teamCode === newUser.teamCodeRequested);
-    if(!targetCoord && newUser.teamCodeRequested !== 'MASTER2026') {
-        alert("Nieprawidłowy kod zespołu!");
-        return;
-    }
-
-    DB.pendingUsers.push(newUser);
-    save();
-    alert("Konto utworzone. Poczekaj na akceptację koordynatora.");
-}
-
-// --- RENDER VIEWS ---
-function renderDashboard() {
-    let html = `<h2>Witaj, ${CU.firstName}!</h2>`;
-    
-    // Info o zespole dla Ambasadora
-    if(CU.role === 'ambassador') {
-        const myCoord = DB.users.find(u => u.teamCode === CU.teamCodeRequested);
-        html += `<div class="team-info">Twój Zespół: <b>${CU.teamCodeRequested}</b><br>Koordynator: ${myCoord ? myCoord.firstName + ' ' + myCoord.lastName : 'Administrator'}</div>`;
-    }
-
-    // Panel Administracyjny (SuperAdmin)
-    if(CU.role === 'superadmin') {
-        html += `<h3>Panel SuperAdmina</h3>
-                <div class="card">
-                    <p>Zarządzaj uprawnieniami i kodami zespołów</p>
-                    <button class="btn btn-primary" onclick="viewAllUsers()">Zarządzaj Użytkownikami</button>
-                    <button class="btn btn-ghost" onclick="exportExcel()">Pełny Eksport Danych (Excel)</button>
-                </div>`;
-    }
-
-    // Panel Koordynatora
-    if(CU.role === 'coordinator' || CU.role === 'superadmin') {
-        const myPending = DB.pendingUsers.filter(u => u.teamCodeRequested === CU.teamCode || CU.role === 'superadmin');
-        html += `<h3>Oczekujące konta (${myPending.length})</h3>`;
-        myPending.forEach(u => {
-            html += `<div class="card">${u.firstName} ${u.lastName} (${u.email}) 
-                    <button onclick="approveUser('${u.id}')">Akceptuj</button></div>`;
-        });
-    }
-
-    document.getElementById('main-content').innerHTML = html;
-}
-
-function approveUser(userId) {
-    const userIdx = DB.pendingUsers.findIndex(u => u.id === userId);
-    const user = DB.pendingUsers.splice(userIdx, 1)[0];
-    user.status = 'active';
-    DB.users.push(user);
-    save();
-    alert("Użytkownik zaakceptowany!");
-    renderDashboard();
-    exportExcel(); // Automatyczny backup przy ważnej zmianie
-}
-
-function viewAllUsers() {
-    let html = `<h3>Wszyscy Użytkownicy</h3>`;
-    DB.users.forEach(u => {
-        html += `<div class="card">
-            ${u.firstName} ${u.lastName} - <b>Rola: ${u.role}</b> - Kod: ${u.teamCode || 'Brak'}
-            <br>
-            <button onclick="makeCoordinator('${u.id}')">Daj Koordynatora</button>
-            <button onclick="changeUserCode('${u.id}')">Zmień Kod Teamu</button>
-        </div>`;
+/* CALENDAR */
+function buildCalDay(day,idx,actions,isCoord,locked){
+  const dateKey=dk(day);
+  const todHd=isToday(day)?'today-hd':'';
+  const todN=isToday(day)?'today':'';
+  const mm=String(day.getMonth()+1).padStart(2,'0');
+  const addFn=isCoord?`openCoordAddAction('${dateKey}')`:`openAddAction('${dateKey}')`;
+  const addDis=(!isCoord&&(locked||actions.length>=2))?'disabled':'';
+  let h=`<div class="cal-day"><div class="cal-hd ${todHd}"><div class="cal-hd-l"><div class="cal-num ${todN}">${day.getDate()}</div><div><div class="cal-day-name">${DAYS[idx]}</div><div class="cal-day-date">${mm}.${day.getFullYear()}</div></div></div><button class="btn btn-sm btn-primary" ${addDis} onclick="${addFn}">+ Dodaj</button></div>`;
+  if(!actions.length){h+=`<div class="cal-empty">Brak akcji</div>`;}
+  else{
+    h+=`<div class="cal-slots">`;
+    actions.forEach(a=>{
+      const l=getL(a.locationId);const u=getU(a.ambassadorId);const active=a.startedAt&&!a.endedAt;const sc=sdc(a.status,active);const sales=(a.sales||[]).length;
+      h+=`<div class="slot s-${sdc(a.status,active)}" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.address||'?'}</div><div class="slot-type">${l?.shopType||''}</div><div class="slot-meta"><span class="slot-time">${a.startTime}–${a.endTime}</span>${sales>0?`<span class="slot-sales-ct">${sales} sprzedazy`:''}${isCoord?`<span class="slot-amb" style="color:${u?.color||'#666'}">${fullName(u)}</span>`:''}${sales>0?'</span>':''}<span class="slot-st">${slbl(a.status,active)}</span></div></div>${active?`<span class="live-tag">LIVE</span>`:''}</div>`;
     });
-    document.getElementById('main-content').innerHTML = html;
+    h+=`</div>`;
+  }
+  return h+`</div>`;
 }
 
-function makeCoordinator(userId) {
-    const user = DB.users.find(u => u.id === userId);
-    user.role = 'coordinator';
-    user.teamCode = user.lastName.toUpperCase() + "2026";
+/* AMB DASHBOARD */
+function renderAmbDashboard(){
+  const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
+  const wkKeys=new Set(getWeek(0).map(dk));
+  const tw=mine.filter(a=>wkKeys.has(a.date));
+  const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);
+  const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);
+  const approved=tw.filter(a=>a.status==='approved').length;
+  const pending=tw.filter(a=>a.status==='pending').length;
+  const rejected=tw.filter(a=>a.status==='rejected').length;
+  const active=mine.find(a=>a.startedAt&&!a.endedAt);
+  const todayKey=dk(new Date());
+  const upcoming=mine.filter(a=>a.status==='approved'&&a.date>=todayKey&&!a.startedAt&&!a.endedAt).sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime)));
+  const next=upcoming[0];
+  let h=`<div class="section-hd"><div class="page-title">Witaj, ${CU.firstName}</div><div class="page-sub">Biezacy tydzien — ${fmtD(getWeek(0)[0])} – ${fmtD(getWeek(0)[6])}</div></div>`;
+  if(active){h+=`<div id="ti-inject">${buildTimerCard(active.id)}</div>`;setTimeout(()=>startTimerUI(active.id),80);}
+  if(!active&&next){
+    const isNextToday=next.date===todayKey;
+    const minsUntil=isNextToday?t2m(next.startTime)-t2m(nowStr()):-1;
+    const canStart=isNextToday&&minsUntil<=30&&minsUntil>=-5;
+    const loc=getL(next.locationId);
+    h+=`<div class="next-card"><div style="font-size:12px;font-weight:700;margin-bottom:4px">Najblizsa akcja: ${next.date} o ${next.startTime}</div><div style="font-size:11px;color:var(--muted)">${loc?.shopType} — ${loc?.address?.split(',')[0]}</div><div style="margin-top:8px">${canStart?`<button class="btn btn-green btn-sm" onclick="startAction('${next.id}')">Rozpocznij akcje</button>`:`<span style="font-size:11px;color:var(--muted)">Start o ${next.startTime}</span>`}</div></div>`;
+  }
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Zaplanowane h</div><div class="stat-val">${ph.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${sales}</div></div><div class="stat-card"><div class="stat-lbl">Zatwierdzone</div><div class="stat-val" style="color:var(--green)">${approved}</div></div><div class="stat-card"><div class="stat-lbl">Oczekujace</div><div class="stat-val" style="color:var(--yellow)">${pending}</div><div class="stat-s">${rejected} odrzuconych</div></div></div>`;
+  h+=`<div class="card"><div class="card-hd"><div class="card-title">Akcje tego tygodnia</div><button class="btn btn-ghost btn-sm" onclick="showPanel('amb-schedule')">Grafik</button></div>`;
+  if(!tw.length){h+=`<div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">Brak akcji w tym tygodniu</div>`;}
+  else{tw.sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime))).forEach(a=>{const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;const sc=sdc(a.status,act);h+=`<div class="slot s-${sdc(a.status,act)}" style="margin-bottom:5px" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.address||'?'}</div><div class="slot-meta"><span class="slot-time">${a.date} ${a.startTime}–${a.endTime}</span>${(a.sales?.length||0)>0?`<span class="slot-sales-ct">${a.sales.length} sprzedazy</span>`:''}<span class="slot-st">${slbl(a.status,act)}</span></div></div>${act?`<span class="live-tag">LIVE</span>`:''}<span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></div>`;});}
+  return h+`</div>`;
+}
+
+/* AMB ACTIONS */
+function renderAmbActions(){
+  const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
+  const todayKey=dk(new Date());
+  const active=mine.find(a=>a.startedAt&&!a.endedAt);
+  const upcoming=mine.filter(a=>a.status==='approved'&&a.date>=todayKey&&!a.endedAt).sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime)));
+  const next=upcoming[0];
+  let h=`<div class="section-hd"><div class="page-title">Moje akcje</div><div class="page-sub">Nadchodzace i aktywne</div></div>`;
+  if(active){h+=`<div id="ti-inject">${buildTimerCard(active.id)}</div>`;setTimeout(()=>startTimerUI(active.id),80);}
+  if(!active&&next){
+    const isNextToday=next.date===todayKey;
+    const minsUntil=isNextToday?t2m(next.startTime)-t2m(nowStr()):-1;
+    const canStart=isNextToday&&minsUntil<=30;
+    const loc=getL(next.locationId);
+    h+=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent)"><div class="card-title">Najblizsa akcja</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">${loc?.shopType||'?'} — ${loc?.address||'?'}</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">${next.date} &nbsp; ${next.startTime}–${next.endTime}${loc?.note?` — ${loc.note}`:''}</div>${canStart?`<div style="background:var(--green-l);border:1px solid #bbf7d0;border-left:3px solid var(--green);padding:8px 10px;margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:var(--green)">Mozesz teraz rozpoczac akcje</div><div style="font-size:11px;color:var(--muted)">Okno startowe — 30 min przed godzina akcji</div></div><button class="btn btn-green btn-sm" onclick="startAction('${next.id}')">Rozpocznij akcje</button>`:`<div style="font-size:12px;color:var(--muted)">Start o ${next.startTime}</div>`}</div>`;
+  }
+  h+=`<div class="card"><div class="card-title">Wszystkie nadchodzace (${upcoming.length})</div>`;
+  if(!upcoming.length)h+=`<div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">Brak zaplanowanych akcji</div>`;
+  upcoming.forEach(a=>{
+    const l=getL(a.locationId);const isNextToday=a.date===todayKey;const mU=isNextToday?t2m(a.startTime)-t2m(nowStr()):-1;const cs=isNextToday&&mU<=30;
+    h+=`<div class="slot s-approved" style="margin-bottom:5px" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.shopType} — ${l?.address?.split(',')[0]}</div><div class="slot-meta"><span class="slot-time">${a.date} ${a.startTime}–${a.endTime}</span></div></div>${cs?`<button class="btn btn-green btn-xs" onclick="event.stopPropagation();startAction('${a.id}')">Start</button>`:''}`;
+    h+=`</div>`;
+  });
+  return h+`</div>`;
+}
+
+/* AMB SCHEDULE */
+function renderAmbSchedule(){
+  const days=getWeek(weekOff);const locked=weekOff===1&&!canEditNextWeek();
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Moj grafik</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div></div>`;
+  if(locked)h+=`<div class="locked-bar">Nastepny tydzien mozna planowac od srody biezacego tygodnia.</div>`;
+  h+=`<div class="week-nav">${weekOff>0?`<button class="wk-btn" onclick="chgWk(-1)">Poprzedni</button>`:''}<span class="wk-lbl"><span class="wk-tag${weekOff===1?' next':''}">${weekOff===0?'Biezacy tydzien':'Nastepny tydzien'}</span></span>${weekOff<1?`<button class="wk-btn" onclick="chgWk(1)">Nastepny</button>`:''}</div><div class="cal-list">`;
+  days.forEach((day,i)=>{const mine=DB.actions.filter(a=>a.ambassadorId===CU.id&&a.date===dk(day));h+=buildCalDay(day,i,mine,false,locked);});
+  return h+`</div>`;
+}
+function chgWk(d){weekOff=Math.max(0,Math.min(1,weekOff+d));showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');}
+
+/* AMB STATS */
+function renderAmbStats(){
+  const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
+  const wk=new Set(getWeek(0).map(dk));const tw=mine.filter(a=>wk.has(a.date));
+  const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);
+  const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);
+  const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);
+  const active=mine.find(a=>a.startedAt&&!a.endedAt);
+  let h=`<div class="section-hd"><div class="page-title">Statystyki</div><div class="page-sub">Biezacy tydzien</div></div>`;
+  h+=`<div id="ti-inject">${active?buildTimerCard(active.id):''}</div>`;
+  if(active)setTimeout(()=>startTimerUI(active.id),80);
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Plan h</div><div class="stat-val">${ph.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Realiz. h</div><div class="stat-val" style="color:var(--green)">${rh.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${sales}</div></div><div class="stat-card"><div class="stat-lbl">Wyplata</div><div class="stat-val" style="color:var(--yellow);font-size:18px">${(rh*25).toFixed(0)} zl</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">Historia akcji</div><div class="tw"><table><thead><tr><th>Data</th><th>Lokalizacja</th><th>Czas</th><th>Status</th><th>Sprzed.</th></tr></thead><tbody>`;
+  const sorted=[...mine].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length)h+=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Brak akcji</td></tr>`;
+  sorted.slice(0,25).forEach(a=>{const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;h+=`<tr class="clickable" onclick="openDetail('${a.id}')"><td style="font-family:var(--mono)">${a.date}</td><td><div style="font-weight:600">${l?.shopType||'?'}</div><div style="font-size:10px;color:var(--muted)">${l?.address?.split(',')[0]||''}</div></td><td style="font-family:var(--mono)">${a.startTime}–${a.endTime}</td><td><span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></td><td style="color:var(--green);font-weight:700">${a.sales?.length||0}</td></tr>`;});
+  return h+`</tbody></table></div></div>`;
+}
+
+/* ADD ACTION */
+function openAddAction(dateKey,prefAmbId){
+  const ambId=prefAmbId||CU.id;
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}">${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Nowa akcja';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px">${dateKey}</div>
+    <div id="ae" class="alert alert-err"></div>
+    <div id="ai" class="alert alert-info"></div>
+    ${prefAmbId?`<div class="fg"><label class="fl">Ambasador</label><div class="f-static">${fullName(getU(prefAmbId))}</div></div>`:''}
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="al" onchange="onLocChg()">${locOpts}<option value="__new__">+ Nowa lokalizacja...</option></select></div>
+    <div id="nloc-sec" style="display:none"><div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);padding:11px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text2);margin-bottom:8px">Nowa lokalizacja</div>
+      <div class="fg"><label class="fl">Typ</label><select class="fc" id="nlt">${SHOP_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Adres</label><input type="text" class="fc" id="nla" placeholder="ul. Przykladowa 1, Warszawa"></div>
+      <div class="fg"><label class="fl">Uwagi</label><input type="text" class="fc" id="nln" placeholder="opcjonalne"></div>
+    </div></div>
+    <div class="fg"><label class="fl">Numer akcji</label><select class="fc" id="an"><option value="1">Akcja 1</option><option value="2">Akcja 2</option></select></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Godzina od</label><input type="time" class="fc" id="as" value="09:00"></div>
+      <div class="fg"><label class="fl">Godzina do</label><input type="time" class="fc" id="ae2" value="13:00"></div>
+    </div>
+    <div class="fhint" style="margin-top:-8px;margin-bottom:10px">Min. 1h — maks. 4h na jedna akcje</div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitAddAction('${dateKey}','${ambId}')">Dodaj akcje</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+function onLocChg(){const v=document.getElementById('al')?.value;const s=document.getElementById('nloc-sec');if(s)s.style.display=v==='__new__'?'block':'none';}
+function submitAddAction(dateKey,ambId){
+  const locSel=document.getElementById('al').value;
+  const numV=document.getElementById('an').value;
+  const s=document.getElementById('as').value;
+  const e=document.getElementById('ae2').value;
+  const err=document.getElementById('ae');const inf=document.getElementById('ai');
+  err.className='alert alert-err';inf.className='alert alert-info';
+  const h=diffH(s,e);
+  if(h<1||h>4){err.innerHTML=`Akcja musi trwac min. 1h i maks. 4h (wpisano ${h.toFixed(1)}h)`;err.className='alert alert-err show';return;}
+  if(t2m(e)<=t2m(s)){err.innerHTML='Godzina zakonczenia musi byc po starcie';err.className='alert alert-err show';return;}
+  let locId=locSel;
+  if(locSel==='__new__'){
+    const addr=document.getElementById('nla')?.value.trim();const type=document.getElementById('nlt')?.value;const note=document.getElementById('nln')?.value.trim();
+    if(!addr){err.innerHTML='Podaj adres lokalizacji';err.className='alert alert-err show';return;}
+    locId=uid();DB.locations.push({id:locId,address:addr,shopType:type,note});
+  }
+  const conflict=DB.actions.find(a=>a.date===dateKey&&a.locationId===locId&&!(t2m(e)<=t2m(a.startTime)||t2m(s)>=t2m(a.endTime)));
+  if(conflict){const u2=getU(conflict.ambassadorId);inf.innerHTML=`Brand Ambasador <strong>${fullName(u2)}</strong> pracuje na tym punkcie w godzinach <strong>${conflict.startTime}–${conflict.endTime}</strong>`;inf.className='alert alert-info show';}
+  const existing=DB.actions.filter(a=>a.ambassadorId===ambId&&a.date===dateKey);
+  if(existing.length>=2){err.innerHTML='Maks. 2 akcje dziennie';err.className='alert alert-err show';return;}
+  DB.actions.push({id:uid(),ambassadorId:ambId,locationId:locId,date:dateKey,startTime:s,endTime:e,status:'pending',sales:[],actionNum:parseInt(numV),startedAt:null,endedAt:null,endReason:null});
+  save();closeModal();toast('Akcja dodana — czeka na zatwierdzenie','tok');
+  showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');
+}
+
+/* ACTION DETAIL */
+function openDetail(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  const l=getL(a.locationId);const u=getU(a.ambassadorId);
+  const active=a.startedAt&&!a.endedAt;
+  const isC=CU.role==='coordinator';const isMine=a.ambassadorId===CU.id;
+  const todayKey=dk(new Date());
+  const minsUntil=a.date===todayKey?t2m(a.startTime)-t2m(nowStr()):-1;
+  const canStart=isMine&&a.status==='approved'&&a.date===todayKey&&!a.startedAt&&minsUntil<=30;
+  const canEnd=isMine&&active;
+  const salesHtml=(a.sales||[]).map(sv=>{const m=getM(sv.mechanismId);return`<div class="sale-item">${sv.receiptData?`<img src="${sv.receiptData}" class="sale-receipt" alt="paragon">`:`<div class="sale-no-img">P</div>`}<div><div class="sale-mech">${m?.name||'?'}</div><div class="sale-meta"><span class="reg-tag ${sv.registered?'reg-yes':'reg-no'}">${sv.registered?'Zarejestrowany':'Niezarejestrowany'}</span></div></div></div>`;}).join('');
+  document.getElementById('modal-ttl').textContent='Szczegoly akcji';
+  document.getElementById('modal-body').innerHTML=`
+    ${isC?`<div class="qa-row">${a.status!=='approved'?`<button class="btn btn-green btn-sm" onclick="setActionStatus('${a.id}','approved')">Zatwierdz</button>`:''} ${a.status!=='rejected'?`<button class="btn btn-red btn-sm" onclick="setActionStatus('${a.id}','rejected')">Odrzuc</button>`:''} <button class="btn btn-ghost btn-sm" onclick="openEditAction('${a.id}')">Edytuj</button> <button class="btn btn-ghost btn-sm" onclick="confirmDeleteAction('${a.id}')">Usun</button></div>`:''}
+    <div class="dbox">
+      <div class="drow"><span class="dk2">Lokalizacja</span><span class="dv">${l?.shopType||'?'}</span></div>
+      <div class="drow"><span class="dk2">Adres</span><span class="dv" style="font-size:11px">${l?.address||'?'}</span></div>
+      ${l?.note?`<div class="drow"><span class="dk2">Uwagi</span><span class="dv" style="font-size:11px;color:var(--muted)">${l.note}</span></div>`:''}
+      <div class="drow"><span class="dk2">Data</span><span class="dv" style="font-family:var(--mono)">${a.date}</span></div>
+      <div class="drow"><span class="dk2">Godziny</span><span class="dv" style="font-family:var(--mono)">${a.startTime} – ${a.endTime}</span></div>
+      <div class="drow"><span class="dk2">Ambasador</span><span class="dv" style="color:${u?.color||'inherit'}">${fullName(u)}</span></div>
+      <div class="drow"><span class="dk2">Status</span><span class="badge ${bdcls(a.status,active)}">${slbl(a.status,active)}</span></div>
+      <div class="drow"><span class="dk2">Sprzedaze</span><span class="dv" style="color:var(--green)">${(a.sales||[]).length}</span></div>
+      ${a.endReason?`<div class="drow"><span class="dk2">Powod zakonczenia</span><span class="dv" style="font-size:11px">${a.endReason}</span></div>`:''}
+    </div>
+    ${salesHtml?`<div style="margin-bottom:12px"><div class="card-title" style="margin-bottom:6px">Sprzedaze</div>${salesHtml}</div>`:''}
+    ${canStart?`<button class="btn btn-green btn-block" style="margin-bottom:6px" onclick="startAction('${a.id}')">Rozpocznij akcje</button>`:''}
+    ${canEnd?`<button class="btn btn-red btn-block" style="margin-bottom:6px" onclick="openEndActionModal('${a.id}')">Zakoncz akcje</button>`:''}
+    ${isMine&&active?`<button class="btn btn-primary btn-block" style="margin-bottom:6px" onclick="closeModal();showPanel('amb-actions')">Dodaj sprzedaz</button>`:''}
+    ${!isC&&a.status==='pending'?`<button class="btn btn-ghost btn-block" style="margin-bottom:6px" onclick="confirmDeleteAction('${a.id}')">Usun akcje</button>`:''}
+    <button class="btn btn-ghost btn-block" onclick="closeModal()">Zamknij</button>`;
+  openModal();
+}
+function setActionStatus(id,st){const a=DB.actions.find(x=>x.id===id);if(a){a.status=st;save();}closeModal();toast(st==='approved'?'Akcja zatwierdzona':'Akcja odrzucona',st==='approved'?'tgreen':'terr');showPanel('coord-approvals');}
+function confirmDeleteAction(id){if(!confirm('Usunac ta akcje?'))return;DB.actions=DB.actions.filter(a=>a.id!==id);save();closeModal();toast('Usunieto','twarn');showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');}
+function startAction(id){const a=DB.actions.find(x=>x.id===id);if(!a)return;a.startedAt=Date.now();save();closeModal();toast('Akcja rozpoczeta','tgreen');showPanel('amb-actions');}
+
+/* END ACTION */
+function openEndActionModal(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  const nw=nowStr();const earlyEnd=t2m(nw)<t2m(a.endTime);
+  document.getElementById('modal-ttl').textContent='Zakoncz akcje';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="background:var(--yellow-l);border:1px solid #fde68a;border-left:3px solid var(--yellow);padding:8px 10px;font-size:12px;margin-bottom:14px">Planowane zakonczenie: <strong>${a.endTime}</strong>${earlyEnd?` — <strong style="color:var(--yellow)">Kończysz wczesniej</strong>`:''}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:14px">Na pewno chcesz zakonczyc akcje?</div>
+    ${earlyEnd?`<div class="fg"><label class="fl">Powod wczesniejszego zakonczenia *</label><select class="fc" id="end-reason-sel"><option value="">Wybierz powod...</option><option>Osiagnieto cel sprzedazowy</option><option>Brak klientow</option><option>Problem z punktem sprzedazy</option><option>Choroba / zle samopoczucie</option><option>Decyzja koordynatora</option><option>Inne</option></select></div><div class="fg" id="end-other-wrap" style="display:none"><label class="fl">Opisz powod</label><input type="text" class="fc" id="end-reason-txt" placeholder="Wpisz powod..."></div>`:`<div class="fg"><label class="fl">Notatka (opcjonalna)</label><input type="text" class="fc" id="end-note" placeholder="np. plan zrealizowany"></div>`}
+    <div class="btn-row"><button class="btn btn-red" style="flex:1" onclick="submitEndAction('${actionId}',${earlyEnd})">Tak, zakoncz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  document.getElementById('end-reason-sel')?.addEventListener('change',function(){const w=document.getElementById('end-other-wrap');if(w)w.style.display=this.value==='Inne'?'block':'none';});
+  openModal();
+}
+function submitEndAction(actionId,earlyEnd){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  let reason='';
+  if(earlyEnd){const sel=document.getElementById('end-reason-sel');if(!sel?.value){toast('Wybierz powod zakonczenia','terr');return;}reason=sel.value==='Inne'?(document.getElementById('end-reason-txt')?.value||'Inne'):sel.value;}
+  else{reason=document.getElementById('end-note')?.value||'';}
+  a.endedAt=Date.now();a.endReason=reason;save();
+  if(timerInt){clearInterval(timerInt);timerInt=null;}
+  closeModal();toast('Akcja zakonczona','twarn');showPanel('amb-stats');
+}
+
+/* SALE MODAL */
+function openAddSaleModal(actionId){
+  saleRegVal=true;salePhotoData=null;
+  const mechs=DB.mechanisms.filter(m=>m.active);
+  if(!mechs.length){toast('Brak aktywnych mechanizmow — skontaktuj sie z koordynatorem','terr');return;}
+  document.getElementById('modal-ttl').textContent='Dodaj sprzedaz';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="sale-err" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Czy udala sie sprzedaz?</label><div class="toggle-row"><div class="tog-opt sel" id="tog-yes" onclick="selSaleResult(true)">Tak, udala sie</div><div class="tog-opt" id="tog-no" onclick="selSaleResult(false)">Nie udala sie</div></div></div>
+    <div id="sale-details">
+      <div class="fg"><label class="fl">Mechanizm sprzedazy</label><select class="fc" id="sale-mech"><option value="">Wybierz mechanizm...</option>${mechs.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Klient zarejestrowany?</label><div class="toggle-row"><div class="tog-opt sel" id="tog-reg-yes" onclick="selReg(true)">Tak</div><div class="tog-opt" id="tog-reg-no" onclick="selReg(false)">Nie</div></div></div>
+      <div class="fg"><label class="fl">Zdjecie paragonu</label>
+        <div class="photo-area" id="photo-area"><input type="file" id="receipt-inp" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+          <div id="photo-ph" style="pointer-events:none"><div style="font-size:11px;font-weight:600;color:var(--text2)">Zrob zdjecie lub wybierz z galerii</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Dotknij aby dodac</div></div>
+          <img id="photo-preview" alt=""></div>
+        <div class="fhint">Wymagane do zatwierdzenia sprzedazy</div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-green" style="flex:1" onclick="submitSale('${actionId}')">Zapisz sprzedaz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+function selSaleResult(v){saleRegVal=v;document.getElementById('tog-yes').className='tog-opt'+(v?' sel':'');document.getElementById('tog-no').className='tog-opt'+(!v?' sel':'');document.getElementById('sale-details').style.display=v?'block':'none';}
+function selReg(v){document.getElementById('tog-reg-yes').className='tog-opt'+(v?' sel':'');document.getElementById('tog-reg-no').className='tog-opt'+(!v?' sel':'');saleRegVal=v;}
+function handlePhoto(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{salePhotoData=ev.target.result;const prev=document.getElementById('photo-preview');const ph=document.getElementById('photo-ph');if(prev){prev.src=salePhotoData;prev.style.display='block';}if(ph)ph.style.display='none';};r.readAsDataURL(f);}
+function submitSale(actionId){
+  const mechId=document.getElementById('sale-mech')?.value;
+  const err=document.getElementById('sale-err');err.className='alert alert-err';
+  const sold=document.getElementById('tog-yes')?.classList.contains('sel');
+  if(sold&&!mechId){err.innerHTML='Wybierz mechanizm sprzedazy';err.className='alert alert-err show';return;}
+  if(sold&&!salePhotoData){err.innerHTML='Dodaj zdjecie paragonu';err.className='alert alert-err show';return;}
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  if(!a.sales)a.sales=[];
+  a.sales.push({id:uid(),mechanismId:mechId||null,registered:saleRegVal,receiptData:salePhotoData,sold,ts:Date.now()});
+  save();closeModal();toast(`Sprzedaz zapisana. Lacznie: ${a.sales.length}`,'tgreen');showPanel('amb-actions');
+}
+
+/* TIMER */
+function buildTimerCard(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);const l=getL(a?.locationId);const sc=(a.sales||[]).length;
+  return`<div class="timer-card"><div class="tc-lbl"><span class="tc-dot"></span>AKCJA W TOKU</div><div class="tc-loc">${l?.shopType} — ${l?.address?.split(',')[0]} — ${a.startTime}–${a.endTime}</div><div class="tc-timer" id="tc-disp-${actionId}">00:00:00</div><div class="tc-sc-row"><span class="tc-sc-lbl">Sprzedaze:</span><span class="tc-sc-val" id="tc-sales-${actionId}">${sc}</span></div><button class="tc-add-sale" onclick="openAddSaleModal('${actionId}')">Dodaj sprzedaz</button><button class="tc-end" onclick="openEndActionModal('${actionId}')">Zakoncz akcje</button></div>`;
+}
+function checkTimer(){if(CU?.role!=='ambassador')return;const active=DB.actions.find(a=>a.ambassadorId===CU.id&&a.startedAt&&!a.endedAt);if(!active)return;const tc=document.getElementById('ti-inject');if(!tc)return;tc.innerHTML=buildTimerCard(active.id);startTimerUI(active.id);}
+function startTimerUI(id){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{const a=DB.actions.find(x=>x.id===id);if(!a||!a.startedAt)return clearInterval(timerInt);const el=document.getElementById('tc-disp-'+id);if(el)el.textContent=fmtSec(Math.floor((Date.now()-a.startedAt)/1000));const sc=document.getElementById('tc-sales-'+id);if(sc)sc.textContent=(a.sales||[]).length;},1000);}
+
+/* COORD DASHBOARD */
+function renderCoordDashboard(){
+  const myAmbs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id&&u.status==='active');
+  const pending=DB.actions.filter(a=>a.status==='pending');
+  const activeNow=DB.actions.filter(a=>a.startedAt&&!a.endedAt);
+  const todayActions=DB.actions.filter(a=>a.date===dk(new Date()));
+  const pendingAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id);
+  let h=`<div class="section-hd"><div class="page-title">Dashboard</div><div class="page-sub">Witaj, ${CU.firstName}</div></div>`;
+  if(pendingAcc.length){h+=`<div class="next-card" style="cursor:pointer;margin-bottom:12px" onclick="showPanel('coord-accounts')"><div style="font-size:12px;font-weight:700">${pendingAcc.length} konto${pendingAcc.length>1?'a':''} oczekuje na zatwierdzenie</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Kliknij aby przejrzec</div></div>`;}
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Ambasadorzy</div><div class="stat-val">${myAmbs.length}</div></div><div class="stat-card"><div class="stat-lbl">Akcje dzis</div><div class="stat-val">${todayActions.length}</div></div><div class="stat-card"><div class="stat-lbl">Na zywo</div><div class="stat-val" style="color:var(--green)">${activeNow.length}</div></div><div class="stat-card"><div class="stat-lbl">Do zatwierdzenia</div><div class="stat-val" style="color:var(--yellow)">${pending.length}</div></div></div>`;
+  if(activeNow.length){
+    h+=`<div class="card" style="margin-bottom:12px"><div class="card-title">Aktywne teraz (${activeNow.length})</div>`;
+    activeNow.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const elapsed=Math.floor((Date.now()-a.startedAt)/1000);h+=`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)"><div class="av" style="background:${u?.color||'#2563eb'}18;color:${u?.color||'#2563eb'};border-color:${u?.color||'#2563eb'}40">${ini(u)}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${fullName(u)}</div><div style="font-size:11px;color:var(--muted)">${l?.shopType} — ${l?.address?.split(',')[0]} — ${a.startTime}–${a.endTime}</div></div><div style="text-align:right"><div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">${fmtSec(elapsed)}</div><div style="font-size:10px;color:var(--green)">${(a.sales||[]).length} sprzedazy</div></div></div>`;});
+    h+=`</div>`;
+  }
+  if(pending.length){
+    h+=`<div class="card"><div class="card-hd"><div class="card-title">Oczekuje na zatwierdzenie (${pending.length})</div><button class="btn btn-ghost btn-sm" onclick="showPanel('coord-approvals')">Wszystkie</button></div>`;
+    pending.slice(0,5).forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);h+=`<div class="ap-row"><div class="ap-top"><div><div class="ap-title">${l?.shopType||'?'} — ${l?.address?.split(',')[0]||'?'}</div><div class="ap-sub" style="color:${u?.color}">${fullName(u)} — ${a.date} ${a.startTime}–${a.endTime}</div></div><div class="ap-btns"><button class="btn btn-green btn-xs" onclick="setActionStatus('${a.id}','approved')">Zatwierdz</button><button class="btn btn-red btn-xs" onclick="setActionStatus('${a.id}','rejected')">Odrzuc</button></div></div></div>`;});
+    h+=`</div>`;
+  }
+  return h;
+}
+
+/* COORD SCHEDULE */
+function renderCoordSchedule(){
+  const days=getWeek(weekOff);const fv=document.getElementById('cs-filter')?.value||'';
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Grafik zespolu</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div><select class="fc" id="cs-filter" onchange="showPanel('coord-schedule')" style="width:160px">${'<option value="">Wszyscy</option>'+DB.users.filter(u=>u.role==='ambassador'&&u.status==='active').map(u=>`<option value="${u.id}" ${u.id===fv?'selected':''}>${fullName(u)}</option>`).join('')}</select></div>`;
+  h+=`<div class="week-nav">${weekOff>0?`<button class="wk-btn" onclick="chgWk(-1)">Poprzedni</button>`:''}<span class="wk-lbl"><span class="wk-tag${weekOff===1?' next':''}">${weekOff===0?'Biezacy tydzien':'Nastepny tydzien'}</span></span>${weekOff<1?`<button class="wk-btn" onclick="chgWk(1)">Nastepny</button>`:''}</div><div class="cal-list">`;
+  days.forEach((day,i)=>{let da=DB.actions.filter(a=>a.date===dk(day));if(fv)da=da.filter(a=>a.ambassadorId===fv);h+=buildCalDay(day,i,da,true,false);});
+  return h+`</div>`;
+}
+function openCoordAddAction(dk2){
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}">${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Dodaj akcje — '+dk2;
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ae" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Ambasador</label><select class="fc" id="camb">${DB.users.filter(u=>u.role==='ambassador'&&u.status==='active').map(u=>`<option value="${u.id}">${fullName(u)}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="al" onchange="onLocChg()">${locOpts}<option value="__new__">+ Nowa lokalizacja...</option></select></div>
+    <div id="nloc-sec" style="display:none"><div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);padding:11px;margin-bottom:10px">
+      <div class="fg"><label class="fl">Typ</label><select class="fc" id="nlt">${SHOP_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Adres</label><input type="text" class="fc" id="nla" placeholder="ul. Przykladowa 1, Warszawa"></div>
+      <div class="fg"><label class="fl">Uwagi</label><input type="text" class="fc" id="nln" placeholder="opcjonalne"></div>
+    </div></div>
+    <div class="fg"><label class="fl">Nr akcji</label><select class="fc" id="an"><option value="1">Akcja 1</option><option value="2">Akcja 2</option></select></div>
+    <div class="fr"><div class="fg"><label class="fl">Od</label><input type="time" class="fc" id="as" value="09:00"></div><div class="fg"><label class="fl">Do</label><input type="time" class="fc" id="ae2" value="13:00"></div></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="ast"><option value="approved">Zatwierdzona</option><option value="pending">Oczekuje</option></select></div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitCoordAddAction('${dk2}')">Dodaj</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+function submitCoordAddAction(dk2){
+  const ambId=document.getElementById('camb').value;const locSel=document.getElementById('al').value;const numV=document.getElementById('an').value;const s=document.getElementById('as').value;const e=document.getElementById('ae2').value;const st=document.getElementById('ast').value;
+  const err=document.getElementById('ae');err.className='alert alert-err';
+  const h=diffH(s,e);if(h<1||h>4){err.innerHTML='Min. 1h, maks. 4h';err.className='alert alert-err show';return;}
+  let locId=locSel;
+  if(locSel==='__new__'){const addr=document.getElementById('nla')?.value.trim();const type=document.getElementById('nlt')?.value;const note=document.getElementById('nln')?.value.trim();if(!addr){err.innerHTML='Podaj adres';err.className='alert alert-err show';return;}locId=uid();DB.locations.push({id:locId,address:addr,shopType:type,note});}
+  if(DB.actions.filter(a=>a.ambassadorId===ambId&&a.date===dk2).length>=2){err.innerHTML='Maks. 2 akcje dziennie';err.className='alert alert-err show';return;}
+  DB.actions.push({id:uid(),ambassadorId:ambId,locationId:locId,date:dk2,startTime:s,endTime:e,status:st,sales:[],actionNum:parseInt(numV),startedAt:null,endedAt:null,endReason:null});
+  save();closeModal();toast('Dodano','tgreen');showPanel('coord-schedule');
+}
+function openEditAction(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}" ${l.id===a.locationId?'selected':''}>${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Edytuj akcje';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ee-err" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="el">${locOpts}</select></div>
+    <div class="fr"><div class="fg"><label class="fl">Od</label><input type="time" class="fc" id="es" value="${a.startTime}"></div><div class="fg"><label class="fl">Do</label><input type="time" class="fc" id="ee2" value="${a.endTime}"></div></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="est"><option value="pending" ${a.status==='pending'?'selected':''}>Oczekuje</option><option value="approved" ${a.status==='approved'?'selected':''}>Zatwierdzona</option><option value="rejected" ${a.status==='rejected'?'selected':''}>Odrzucona</option></select></div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitEditAction('${actionId}')">Zapisz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+function submitEditAction(id){const a=DB.actions.find(x=>x.id===id);const s=document.getElementById('es').value,e=document.getElementById('ee2').value;const err=document.getElementById('ee-err');if(diffH(s,e)<1||diffH(s,e)>4){err.innerHTML='Min. 1h, maks. 4h';err.className='alert alert-err show';return;}a.locationId=document.getElementById('el').value;a.startTime=s;a.endTime=e;a.status=document.getElementById('est').value;save();closeModal();toast('Zaktualizowano','tgreen');showPanel('coord-schedule');}
+
+/* COORD APPROVALS */
+function renderCoordApprovals(){
+  const pending=DB.actions.filter(a=>a.status==='pending');const recent=DB.actions.filter(a=>a.status!=='pending').slice(-25).reverse();
+  let h=`<div class="section-hd"><div class="page-title">Zatwierdzenia</div><div class="page-sub">${pending.length} oczekujacych</div></div>`;
+  if(!pending.length){h+=`<div class="card" style="text-align:center;padding:32px;color:var(--muted)">Brak oczekujacych akcji</div>`;}
+  else{
+    h+=`<div class="card" style="margin-bottom:12px"><div class="card-title">Oczekujace (${pending.length})</div>`;
+    pending.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);h+=`<div class="ap-row"><div class="ap-top"><div><div class="ap-title">${l?.shopType||'?'} — ${l?.address?.split(',')[0]||'?'}</div><div class="ap-sub"><span style="color:${u?.color}">${fullName(u)}</span> — ${a.date} ${a.startTime}–${a.endTime}</div></div><div class="ap-btns"><button class="btn btn-green btn-sm" onclick="setActionStatus('${a.id}','approved')">Zatwierdz</button><button class="btn btn-red btn-sm" onclick="setActionStatus('${a.id}','rejected')">Odrzuc</button><button class="btn btn-ghost btn-sm" onclick="openDetail('${a.id}')">Szczegoly</button></div></div></div>`;});
+    h+=`</div>`;
+  }
+  h+=`<div class="card"><div class="card-title">Ostatnie decyzje</div><div class="tw"><table><thead><tr><th>Ambasador</th><th>Data</th><th>Lokalizacja</th><th>Status</th><th>Sprzed.</th></tr></thead><tbody>`;
+  if(!recent.length)h+=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">Brak</td></tr>`;
+  recent.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;h+=`<tr class="clickable" onclick="openDetail('${a.id}')"><td style="font-weight:700;color:${u?.color}">${fullName(u)}</td><td style="font-family:var(--mono)">${a.date}</td><td>${l?.shopType||'?'}</td><td><span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></td><td style="color:var(--green);font-weight:700">${a.sales?.length||0}</td></tr>`;});
+  return h+`</tbody></table></div></div>`;
+}
+
+/* COORD ACCOUNTS */
+function renderCoordAccounts(){
+  const pendingAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id);
+  const activeAmbs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id);
+  let h=`<div class="section-hd"><div class="page-title">Konta</div><div class="page-sub">${pendingAcc.length} oczekuje na zatwierdzenie</div></div>`;
+  if(pendingAcc.length){
+    h+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Prosba o dolaczenie do zespolu</div>`;
+    pendingAcc.forEach(p=>{const sv=getU(p.svId);h+=`<div class="acc-row"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="background:#2563eb18;color:#2563eb;border-color:#2563eb40;width:34px;height:34px;">${(p.firstName[0]+p.lastName[0]).toUpperCase()}</div><div><div class="acc-name">${p.firstName} ${p.lastName}</div><div class="acc-meta">${p.email}</div><div class="acc-meta">Koordynator: ${fullName(sv)} — ${new Date(p.createdAt).toLocaleDateString('pl-PL')}</div></div></div><div class="acc-btns"><button class="btn btn-green btn-sm" onclick="approveAccount('${p.id}')">Zatwierdz konto</button><button class="btn btn-red btn-sm" onclick="rejectAccount('${p.id}')">Odrzuc</button></div></div>`;});
+  } else {h+=`<div class="card" style="text-align:center;padding:20px;color:var(--muted);margin-bottom:12px">Brak oczekujacych kont</div>`;}
+  h+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 8px">Aktywni ambasadorzy (${activeAmbs.length})</div>`;
+  activeAmbs.forEach(u=>{const myA=DB.actions.filter(a=>a.ambassadorId===u.id);h+=`<div class="card" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:10px"><div class="av" style="background:${u.color}18;color:${u.color};border-color:${u.color}40;width:34px;height:34px;flex-shrink:0">${(u.firstName[0]+u.lastName[0]).toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${fullName(u)}</div><div style="font-size:11px;color:var(--muted)">${u.email} — ID: ${u.id}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">Akcje: ${myA.length} — Sprzedaze: ${myA.reduce((s,a)=>s+(a.sales?.length||0),0)}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="badge ${u.status==='active'?'bda':'bdr'}">${u.status==='active'?'Aktywny':'Zablokowany'}</span><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="toggleBlockUser('${u.id}')">${u.status==='active'?'Zablokuj':'Odblokuj'}</button><button class="btn btn-red btn-xs" onclick="confirmDeleteUser('${u.id}')">Usun</button></div></div></div></div>`;});
+  return h;
+}
+function approveAccount(pendingId){const p=DB.pendingAccounts.find(x=>x.id===pendingId);if(!p)return;DB.users.push({...p,id:'U'+Date.now(),status:'active'});DB.pendingAccounts=DB.pendingAccounts.filter(x=>x.id!==pendingId);save();buildNav();updateNotifDot();toast(`Konto ${p.firstName} ${p.lastName} zatwierdzone`,'tgreen');showPanel('coord-accounts');}
+function rejectAccount(pendingId){DB.pendingAccounts=DB.pendingAccounts.filter(x=>x.id!==pendingId);save();buildNav();updateNotifDot();toast('Konto odrzucone','terr');showPanel('coord-accounts');}
+function toggleBlockUser(userId){const u=DB.users.find(x=>x.id===userId);if(!u)return;u.status=u.status==='active'?'blocked':'active';save();toast(u.status==='active'?'Odblokowano':'Zablokowano','twarn');showPanel('coord-accounts');}
+function confirmDeleteUser(userId){if(!confirm('Usunac konto tego ambasadora?'))return;DB.users=DB.users.filter(u=>u.id!==userId);save();toast('Konto usuniete','twarn');showPanel('coord-accounts');}
+
+/* COORD TEAM */
+function renderCoordTeam(){
+  const ambs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id&&u.status==='active');
+  const wk=new Set(getWeek(0).map(dk));
+  let h=`<div class="section-hd"><div class="page-title">Moj zespol</div><div class="page-sub">Biezacy tydzien</div></div>`;
+  ambs.forEach(u=>{const tw=DB.actions.filter(a=>a.ambassadorId===u.id&&wk.has(a.date));const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);const active=DB.actions.find(a=>a.ambassadorId===u.id&&a.startedAt&&!a.endedAt);h+=`<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="av" style="background:${u.color}18;color:${u.color};border-color:${u.color}40;width:34px;height:34px;flex-shrink:0">${(u.firstName[0]+u.lastName[0]).toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${fullName(u)}</div><div style="font-size:10px;color:var(--muted)">${u.id}</div></div>${active?`<span class="live-tag">LIVE</span>`:''}<button class="btn btn-ghost btn-sm" onclick="openAddAction('${dk(new Date())}','${u.id}')">+ Akcja</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"><div style="text-align:center"><div style="font-size:15px;font-weight:700;font-family:var(--mono)">${ph.toFixed(1)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Plan h</div></div><div style="text-align:center"><div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">${rh.toFixed(1)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Real. h</div></div><div style="text-align:center"><div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--green)">${sales}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Sprzedaze</div></div><div style="text-align:center"><div style="font-size:15px;font-weight:700;font-family:var(--mono);color:var(--yellow)">${(rh*25).toFixed(0)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Wypl. zl</div></div></div></div>`;});
+  if(!ambs.length)h+=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)">Brak ambasadorow w zespole</div>`;
+  return h;
+}
+
+/* COORD MECHANISMS */
+function renderCoordMechanisms(){
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Mechanizmy sprzedazy</div><div class="page-sub">Dostepne dla ambasadorow</div></div><button class="btn btn-primary btn-sm" onclick="openAddMechModal()">+ Dodaj</button></div>`;
+  if(!DB.mechanisms.length){h+=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)">Brak mechanizmow</div>`;return h;}
+  h+=`<div class="card">`;
+  DB.mechanisms.forEach((m,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;${i>0?'border-top:1px solid var(--border)':''}"><div style="flex:1"><div style="font-size:13px;font-weight:600">${m.name}</div><div style="margin-top:3px"><span class="badge ${m.active?'bda':'bdr'}">${m.active?'Aktywny':'Nieaktywny'}</span></div></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="toggleMech('${m.id}')">${m.active?'Dezaktywuj':'Aktywuj'}</button><button class="btn btn-ghost btn-xs" onclick="editMechModal('${m.id}')">Edytuj</button><button class="btn btn-ghost btn-xs" onclick="deleteMech('${m.id}')">Usun</button></div></div>`;});
+  return h+`</div>`;
+}
+function openAddMechModal(){document.getElementById('modal-ttl').textContent='Nowy mechanizm';document.getElementById('modal-body').innerHTML=`<div class="fg"><label class="fl">Nazwa mechanizmu</label><input type="text" class="fc" id="mn" placeholder="np. Rejestracja aplikacji"></div><div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitMech()">Dodaj</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;openModal();}
+function submitMech(){const n=document.getElementById('mn')?.value.trim();if(!n){toast('Podaj nazwe','terr');return;}DB.mechanisms.push({id:uid(),name:n,active:true});save();closeModal();toast('Dodano','tgreen');showPanel('coord-mechanisms');}
+function toggleMech(id){const m=DB.mechanisms.find(x=>x.id===id);if(m){m.active=!m.active;save();}showPanel('coord-mechanisms');}
+function editMechModal(id){const m=DB.mechanisms.find(x=>x.id===id);if(!m)return;document.getElementById('modal-ttl').textContent='Edytuj mechanizm';document.getElementById('modal-body').innerHTML=`<div class="fg"><label class="fl">Nazwa</label><input type="text" class="fc" id="men" value="${m.name}"></div><div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="saveEditMech('${id}')">Zapisz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;openModal();}
+function saveEditMech(id){const m=DB.mechanisms.find(x=>x.id===id);const n=document.getElementById('men')?.value.trim();if(!n){toast('Podaj nazwe','terr');return;}if(m)m.name=n;save();closeModal();toast('Zaktualizowano','tgreen');showPanel('coord-mechanisms');}
+function deleteMech(id){if(!confirm('Usunac mechanizm?'))return;DB.mechanisms=DB.mechanisms.filter(m=>m.id!==id);save();toast('Usunieto','twarn');showPanel('coord-mechanisms');}
+
+/* COORD REPORT */
+function renderCoordReport(){
+  const ambs=DB.users.filter(u=>u.role==='ambassador'&&u.status==='active');
+  const days=getWeek(0);const wk=new Set(days.map(dk));
+  let tH=0,tS=0,tP=0;
+  const rows=ambs.map(u=>{const tw=DB.actions.filter(a=>a.ambassadorId===u.id&&wk.has(a.date));const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);const s=tw.reduce((sv,a)=>sv+(a.sales?.length||0),0);const p=rh*25;tH+=rh;tS+=s;tP+=p;return{u,n:tw.length,rh,s,p};});
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Raport tygodniowy</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="exportExcel()">Pobierz Excel</button><button class="btn btn-ghost btn-sm" onclick="window.print()">Drukuj</button></div></div>`;
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Lacznie h</div><div class="stat-val">${tH.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${tS}</div></div><div class="stat-card"><div class="stat-lbl">Wyplaty</div><div class="stat-val" style="color:var(--yellow);font-size:18px">${tP.toFixed(0)} zl</div></div><div class="stat-card"><div class="stat-lbl">Ambasadorzy</div><div class="stat-val">${ambs.length}</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">Podsumowanie zespolu</div><div class="tw"><table><thead><tr><th>Imie i nazwisko</th><th>Akcje</th><th>Godz.</th><th>Sprzedaze</th><th>Wyplata</th></tr></thead><tbody>`;
+  rows.forEach(({u,n,rh,s,p})=>{h+=`<tr><td style="font-weight:700;color:${u.color}">${fullName(u)}</td><td style="font-family:var(--mono)">${n}</td><td style="font-family:var(--mono)">${rh.toFixed(1)}h</td><td style="color:var(--green);font-weight:700">${s}</td><td style="color:var(--yellow);font-weight:700">${p.toFixed(2)} zl</td></tr>`;});
+  h+=`<tr style="background:var(--bg);font-weight:700"><td>RAZEM</td><td></td><td style="font-family:var(--mono)">${tH.toFixed(1)}h</td><td style="color:var(--green)">${tS}</td><td style="color:var(--yellow)">${tP.toFixed(2)} zl</td></tr></tbody></table></div></div>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-title">Sprzedaze wg mechanizmu</div><div class="tw"><table><thead><tr><th>Mechanizm</th><th>Sprzedaze</th><th>Zarejestrowani</th></tr></thead><tbody>`;
+  DB.mechanisms.forEach(m=>{const cnt=DB.actions.reduce((s,a)=>s+(a.sales||[]).filter(sv=>sv.mechanismId===m.id&&wk.has(a.date)).length,0);const reg=DB.actions.reduce((s,a)=>s+(a.sales||[]).filter(sv=>sv.mechanismId===m.id&&sv.registered&&wk.has(a.date)).length,0);h+=`<tr><td style="font-weight:600">${m.name}</td><td style="color:var(--green);font-weight:700">${cnt}</td><td>${reg}</td></tr>`;});
+  return h+`</tbody></table></div></div>`;
+}
+
+/* EXCEL */
+function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('Biblioteka XLSX niedostepna','terr');return;}
+  const wb=XLSX.utils.book_new();
+  const actionRows=[['ID','Ambasador','E-mail','Data','Godz. od','Godz. do','Lokalizacja','Typ','Status','Sprzedaze','Godz. realiz.','Powod zakonczenia','Zrealizowana']];
+  DB.actions.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const rh=a.endedAt&&a.startedAt?((a.endedAt-a.startedAt)/3600000).toFixed(2):'';actionRows.push([a.id,fullName(u),u?.email||'',a.date,a.startTime,a.endTime,l?.address||'',l?.shopType||'',slbl(a.status,false),(a.sales||[]).length,rh,a.endReason||'',a.endedAt?'TAK':'']);});
+  const ws1=XLSX.utils.aoa_to_sheet(actionRows);ws1['!cols']=[{wch:12},{wch:22},{wch:28},{wch:12},{wch:9},{wch:9},{wch:36},{wch:14},{wch:14},{wch:10},{wch:13},{wch:24},{wch:12}];XLSX.utils.book_append_sheet(wb,ws1,'Grafik i akcje');
+  const saleRows=[['ID','Data','Ambasador','Lokalizacja','Mechanizm','Zarejestrowany','Paragon']];
+  DB.actions.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);(a.sales||[]).forEach(s=>{const m=getM(s.mechanismId);saleRows.push([s.id,a.date,fullName(u),l?.address||'',m?.name||'',s.registered?'Tak':'Nie',s.receiptData?'Dodano':'Brak']);});});
+  const ws2=XLSX.utils.aoa_to_sheet(saleRows);ws2['!cols']=[{wch:14},{wch:12},{wch:22},{wch:34},{wch:22},{wch:16},{wch:10}];XLSX.utils.book_append_sheet(wb,ws2,'Sprzedaze');
+  const ambRows=[['ID','Imie','Nazwisko','E-mail','Koordynator','Status','Akcje','Sprzedaze']];
+  DB.users.filter(u=>u.role==='ambassador').forEach(u=>{const sv=getU(u.svId);const acts=DB.actions.filter(a=>a.ambassadorId===u.id);ambRows.push([u.id,u.firstName,u.lastName,u.email,fullName(sv),u.status==='active'?'Aktywny':'Zablokowany',acts.length,acts.reduce((s,a)=>s+(a.sales?.length||0),0)]);});
+  const ws3=XLSX.utils.aoa_to_sheet(ambRows);ws3['!cols']=[{wch:12},{wch:14},{wch:18},{wch:28},{wch:20},{wch:12},{wch:10},{wch:12}];XLSX.utils.book_append_sheet(wb,ws3,'Ambasadorzy');
+  XLSX.writeFile(wb,`BrandTool_${new Date().toISOString().slice(0,10)}.xlsx`);toast('Plik Excel pobrany','tgreen');
+}
+
+/* NOTIFICATIONS */
+function renderNotifications(){
+  const pendingAcc=CU.role==='coordinator'?DB.pendingAccounts.filter(p=>p.svId===CU.id):[];
+  const rejected=CU.role==='ambassador'?DB.actions.filter(a=>a.ambassadorId===CU.id&&a.status==='rejected'):[];
+  let h=`<div class="section-hd"><div class="page-title">Powiadomienia</div></div>`;
+  if(!pendingAcc.length&&!rejected.length){h+=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)">Brak powiadomien</div>`;return h;}
+  pendingAcc.forEach(p=>{h+=`<div class="card" style="margin-bottom:8px;border-left:3px solid var(--yellow)"><div style="font-size:12px;font-weight:700">Nowy ambasador chce dolaczyc</div><div style="font-size:11px;color:var(--muted);margin-top:3px">${p.firstName} ${p.lastName} — ${p.email}</div><div class="btn-row"><button class="btn btn-green btn-sm" onclick="approveAccount('${p.id}')">Zatwierdz</button><button class="btn btn-red btn-sm" onclick="rejectAccount('${p.id}')">Odrzuc</button></div></div>`;});
+  rejected.forEach(a=>{const l=getL(a.locationId);h+=`<div class="card" style="margin-bottom:8px;border-left:3px solid var(--red)"><div style="font-size:12px;font-weight:700">Akcja odrzucona</div><div style="font-size:11px;color:var(--muted);margin-top:3px">${l?.shopType} — ${a.date} ${a.startTime}–${a.endTime}</div></div>`;});
+  return h;
+}
+
+/* MODAL */
+function openModal(){document.getElementById('modal-ov').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
+function closeModalBg(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+
+/* INIT */
+(function init(){
+  const saved=loadDB();
+  if(saved){
+    DB=saved;
+    if(!DB.users.find(u=>u.email==='koord@brand.pl'))DB.users.unshift({id:'U1',firstName:'Kamila',lastName:'Kowalska',email:'koord@brand.pl',pass:'1234',role:'coordinator',svId:null,status:'active',color:'#2563eb',createdAt:Date.now()-9e8});
+  } else {
+    const today=new Date();
+    function dkN(n){const d=new Date(today);d.setDate(d.getDate()+n);return dk(d);}
+    const day=today.getDay(),m=day===0?-6:1-day;
+    [{a:'U2',l:'L1',dt:dkN(m),s:'09:00',e:'13:00',st:'approved'},{a:'U2',l:'L3',dt:dkN(m+1),s:'14:00',e:'17:00',st:'pending'},{a:'U3',l:'L2',dt:dkN(m),s:'10:00',e:'14:00',st:'approved'},{a:'U3',l:'L1',dt:dkN(m+2),s:'09:00',e:'12:00',st:'rejected'},{a:'U4',l:'L3',dt:dkN(m+1),s:'08:00',e:'12:00',st:'approved'},{a:'U4',l:'L2',dt:dkN(m+3),s:'13:00',e:'17:00',st:'pending'}].forEach(x=>DB.actions.push({id:uid(),ambassadorId:x.a,locationId:x.l,date:x.dt,startTime:x.s,endTime:x.e,status:x.st,sales:[],actionNum:1,startedAt:null,endedAt:null,endReason:null}));
     save();
-    viewAllUsers();
-}
-
-function changeUserCode(userId) {
-    const newCode = prompt("Podaj nowy kod zespołu:");
-    if(newCode) {
-        const user = DB.users.find(u => u.id === userId);
-        user.teamCode = newCode.toUpperCase();
-        save();
-        viewAllUsers();
-    }
-}
-
-// --- EXCEL EXPORT (BACKUP SYSTEM) ---
-function exportExcel() {
-    const wb = XLSX.utils.book_new();
-    
-    // Arkusz Akcji
-    const actionData = DB.actions.map(a => ({
-        Data: a.date,
-        Ambasador: a.ambassadorId,
-        Godziny: `${a.startTime}-${a.endTime}`,
-        Status: a.status,
-        Sprzedaż: a.sales.length
-    }));
-    const wsActions = XLSX.utils.json_to_sheet(actionData);
-    XLSX.utils.book_append_sheet(wb, wsActions, "Raport_Akcji");
-
-    // Arkusz Użytkowników
-    const userData = DB.users.map(u => ({
-        Imię: u.firstName,
-        Nazwisko: u.lastName,
-        Email: u.email,
-        Rola: u.role,
-        KodTeamu: u.teamCode || u.teamCodeRequested
-    }));
-    const wsUsers = XLSX.utils.json_to_sheet(userData);
-    XLSX.utils.book_append_sheet(wb, wsUsers, "Użytkownicy");
-
-    XLSX.writeFile(wb, `BACKUP_BRANDTOOL_${new Date().getTime()}.xlsx`);
-}
-
-function logout() { location.reload(); }
+  }
+})();
 </script>
 </body>
 </html>
