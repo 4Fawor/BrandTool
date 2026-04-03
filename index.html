@@ -14,7 +14,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   // ══════════════════════════════════════════════════
   // FIREBASE CONFIG
@@ -39,17 +39,24 @@
   auth = getAuth(app);
   }
 
+  // Second app instance for creating users without logging out coordinator
+  let authSecondary = null;
+  if (FIREBASE_OK) {
+    try {
+      const app2 = initializeApp(firebaseConfig, 'secondary');
+      authSecondary = getAuth(app2);
+    } catch(e) { authSecondary = null; }
+  }
+
   window._FB = {
   ok: FIREBASE_OK,
-  db, auth,
-  // Eksportowane metody Firestore
+  db, auth, authSecondary,
   doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, getDocs, addDoc, onSnapshot,
   query, where, serverTimestamp,
-  signInWithEmailAndPassword, signOut, onAuthStateChanged
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged
   };
 
-  // Powiadom apke gdy Firebase gotowy
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 
@@ -171,6 +178,14 @@ img{max-width:100%;}
 .bnav-btn.active{color:var(--accent);}
 .bnav-ico{font-size:11px;font-weight:700;line-height:1.2;font-family:var(--mono);}
 .bnav-bdg{position:absolute;top:2px;right:8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:20px;min-width:15px;text-align:center;}
+
+/* MORE MENU */
+.more-menu{display:none;position:fixed;bottom:calc(var(--nav-h) + 4px);right:8px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:300;min-width:160px;box-shadow:0 -4px 20px rgba(0,0,0,.4);}
+.more-menu.open{display:block;}
+.more-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border-radius:6px;transition:all .12s;position:relative;}
+.more-item:hover,.more-item.active{background:var(--bg3);color:var(--accent);}
+.more-item-ico{font-size:11px;font-weight:700;width:20px;text-align:center;font-family:var(--mono);color:var(--muted);}
+.more-bdg{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;}
 
 /* ── CONTENT ── */
 .main-wrap{padding-bottom:calc(var(--nav-h) + 10px);}
@@ -353,6 +368,56 @@ tr.clickable{cursor:pointer;}
 .loading-dots span:nth-child(2){animation-delay:.15s;}
 .loading-dots span:nth-child(3){animation-delay:.3s;}
 
+/* ── RESPONSIVE FIXES ── */
+@media(max-width:767px){
+  /* Page padding reduced */
+  .page{padding:12px 10px;}
+  
+  /* hd-row stacks vertically on mobile */
+  .hd-row{flex-direction:column;gap:8px;}
+  .hd-row select.fc{width:100%!important;}
+  
+  /* Approval buttons stack */
+  .ap-top{flex-direction:column;gap:8px;}
+  .ap-btns{flex-wrap:wrap;}
+  
+  /* User row stacks */
+  .um-user{flex-wrap:wrap;gap:8px;}
+  .um-controls{width:100%;justify-content:flex-start;}
+  
+  /* Timer smaller font */
+  .tc-timer{font-size:30px;}
+  
+  /* Stat val smaller */
+  .stat-val{font-size:19px;}
+  
+  /* Card padding reduced */
+  .card{padding:12px;}
+  
+  /* Modal full height cap */
+  .modal{max-height:88vh;}
+  
+  /* dbox rows allow wrap */
+  .drow{flex-wrap:wrap;gap:4px;}
+  .dv{text-align:left;}
+  
+  /* acc-btns stack */
+  .acc-btns{flex-direction:column;}
+  .acc-btns .btn{width:100%;}
+  
+  /* fr grid to single column on very small */
+}
+@media(max-width:400px){
+  .fr{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .tc-timer{font-size:26px;}
+}
+
+/* Coordinator panel select filter - full width on mobile */
+@media(max-width:600px){
+  #cs-filter{width:100%!important;margin-top:6px;}
+}
+
 @media print{.topbar,.bnav,.sidebar,.btn,#toast,.modal-ov{display:none!important;}.main-wrap{margin:0!important;}}
 </style>
 </head>
@@ -424,6 +489,7 @@ tr.clickable{cursor:pointer;}
   <div id="fb-status-bar"></div>
   <div class="sidebar" id="sidebar"></div>
   <div class="bnav" id="bnav"></div>
+  <div class="more-menu" id="more-menu"></div>
   <div class="main-wrap"><div class="page" id="main-content"></div></div>
 </div>
 
@@ -743,11 +809,22 @@ function buildNav(){
   const pAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id).length;
   const pAct=DB.actions.filter(a=>a.status==='pending').length;
 
-  document.getElementById('bnav').innerHTML=tabs.slice(0,4).map(t=>{
-  const n=t.id==='coord-accounts'?pAcc:t.id==='coord-approvals'?pAct:0;
-  const bdg=n>0?`<span class="bnav-bdg">${n}</span>`:'';
-  return`<button class="bnav-btn" id="bn-${t.id}" onclick="showPanel('${t.id}')"><span class="bnav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
+  const bnavTabs = tabs.slice(0,3);
+  const moreTabs = tabs.slice(3);
+  let bnavHtml = bnavTabs.map(t=>{
+    const n=t.id==='coord-accounts'?pAcc:t.id==='coord-approvals'?pAct:0;
+    const bdg=n>0?`<span class="bnav-bdg">${n}</span>`:'';
+    return`<button class="bnav-btn" id="bn-${t.id}" onclick="showPanel('${t.id}')"><span class="bnav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
   }).join('');
+  if(moreTabs.length){
+    const moreBadge = moreTabs.reduce((s,t)=>{
+      if(t.id==='coord-accounts') return s+pAcc;
+      if(t.id==='coord-approvals') return s+pAct;
+      return s;
+    },0);
+    bnavHtml += `<button class="bnav-btn" id="bn-more" onclick="toggleMoreMenu()"><span class="bnav-ico">...</span>Wiecej${moreBadge>0?`<span class="bnav-bdg">${moreBadge}</span>`:''}</button>`;
+  }
+  document.getElementById('bnav').innerHTML = bnavHtml;
 
   let s=`<div class="snav-section">Menu</div>`;
   tabs.forEach(t=>{
@@ -758,6 +835,37 @@ function buildNav(){
   s+=`<div class="snav-section" style="margin-top:10px">Eksport</div>`;
   s+=`<button class="snav-btn" onclick="exportExcel()"><span class="snav-ico">XLS</span>Pobierz Excel</button>`;
   document.getElementById('sidebar').innerHTML=s;
+}
+
+function toggleMoreMenu(){
+  const menu = document.getElementById('more-menu');
+  if(!menu) return;
+  if(menu.classList.contains('open')){
+    menu.classList.remove('open'); return;
+  }
+  // Build more menu items
+  const tabs = CU.role==='coordinator' ? COORD_TABS : AMB_TABS;
+  const moreTabs = tabs.slice(3);
+  const pAcc = DB.pendingAccounts.filter(p=>p.svId===CU.id).length;
+  const pAct = DB.actions.filter(a=>a.status==='pending').length;
+  menu.innerHTML = moreTabs.map(t=>{
+    const n = t.id==='coord-accounts'?pAcc:t.id==='coord-approvals'?pAct:0;
+    const isActive = currentPanel === t.id;
+    return `<div class="more-item${isActive?' active':''}" onclick="showPanel('${t.id}');closeMoreMenu()">
+      <span class="more-item-ico">${t.ico}</span>${t.lbl}${n>0?`<span class="more-bdg">${n}</span>`:''}
+    </div>`;
+  }).join('');
+  menu.classList.add('open');
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click', closeMoreOnOutside, {once:true}), 10);
+}
+function closeMoreMenu(){
+  document.getElementById('more-menu')?.classList.remove('open');
+}
+function closeMoreOnOutside(e){
+  const menu=document.getElementById('more-menu');
+  const btn=document.getElementById('bn-more');
+  if(menu&&!menu.contains(e.target)&&e.target!==btn){menu.classList.remove('open');}
 }
 
 function setNav(id){
@@ -1185,12 +1293,59 @@ function renderCoordAccounts(){
 
 async function approveAccount(pendingId){
   const p=DB.pendingAccounts.find(x=>x.id===pendingId);if(!p)return;
-  const newUser={...p, id:'U'+Date.now(), status:'active'};
-  DB.users.push(newUser);
-  await saveUser(newUser);
-  await delPending(pendingId);
+
+  if (FIREBASE_MODE) {
+    try {
+      // 1. Utwórz konto w Firebase Auth
+      // Uzywamy drugiego konta Auth zeby nie wylogowac koordynatora
+      const {authSecondary, createUserWithEmailAndPassword} = window._FB;
+      const authToUse = authSecondary || window._FB.auth;
+      const cred = await createUserWithEmailAndPassword(authToUse, p.email, p.pass);
+      const uid = cred.user.uid;
+
+      // 2. Zapisz profil w Firestore z UID z Auth jako ID dokumentu
+      const newUser = {
+        id: uid,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email,
+        role: 'ambassador',
+        svId: p.svId,
+        status: 'active',
+        color: p.color || '#4f8ef7',
+        createdAt: p.createdAt || Date.now()
+        // NIE zapisujemy hasla w Firestore - Auth je trzyma
+      };
+      DB.users.push(newUser);
+      await saveUser(newUser);
+      await delPending(pendingId);
+
+      // Koordynator zostaje zalogowany - authSecondary nie dotyka glownej sesji
+
+    } catch(e) {
+      console.error('Approve error:', e);
+      // Jesli konto juz istnieje w Auth (np. duplikat), i tak zatwierdz w Firestore
+      if (e.code === 'auth/email-already-in-use') {
+        const newUser = {...p, id: 'U'+Date.now(), status:'active'};
+        delete newUser.pass;
+        DB.users.push(newUser);
+        await saveUser(newUser);
+        await delPending(pendingId);
+      } else {
+        toast('Blad tworzenia konta: ' + (e.message||e.code), 'terr');
+        return;
+      }
+    }
+  } else {
+    // DEMO MODE
+    const newUser = {...p, id:'U'+Date.now(), status:'active'};
+    DB.users.push(newUser);
+    await saveUser(newUser);
+    await delPending(pendingId);
+  }
+
   buildNav(); updateNotifDot();
-  toast(`Konto ${p.firstName} ${p.lastName} zatwierdzone`,'tgreen');
+  toast('Konto ' + p.firstName + ' ' + p.lastName + ' zatwierdzone','tgreen');
   showPanel('coord-accounts');
 }
 
