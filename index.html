@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -6,225 +5,510 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Brand Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIREBASE SETUP — wklej tutaj swój config z Firebase Console
+     Instrukcja: patrz sekcja FIREBASE GUIDE na dole pliku
+     ═══════════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // ══════════════════════════════════════════════════
+  // FIREBASE CONFIG
+  // ══════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLQeO5TuoOVR9aHHyLhXoRIk6gGwZ8BZE",
+    authDomain: "brandtool.firebaseapp.com",
+    projectId: "brandtool",
+    storageBucket: "brandtool.firebasestorage.app",
+    messagingSenderId: "1058941616073",
+    appId: "1:1058941616073:web:b6108b5dab2afa8a21b218",
+    measurementId: "G-ZH5N3FPGGF"
+  };
+  // ══════════════════════════════════════════════════
+
+  const FIREBASE_OK = firebaseConfig.apiKey !== "TWOJ_API_KEY";
+
+  let app, db, auth;
+  if (FIREBASE_OK) {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  }
+
+  window._FB = {
+    ok: FIREBASE_OK,
+    db, auth,
+    // Eksportowane metody Firestore
+    doc, getDoc, setDoc, updateDoc, deleteDoc,
+    collection, getDocs, addDoc, onSnapshot,
+    query, where, serverTimestamp,
+    signInWithEmailAndPassword, signOut, onAuthStateChanged
+  };
+
+  // Powiadom apke gdy Firebase gotowy
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
 <style>
-:root{
-  /* CIEMNY MOTYW */
-  --bg:#121212;
-  --bg2:#1e1e1e;
-  --white:#242424;
-  --border:#333333;
-  --border2:#444444;
-  --text:#e0e0e0;
-  --text2:#b0b0b0;
-  --muted:#777777;
-  --accent:#3b82f6;
-  --accent-l:#1e293b;
-  --accent-d:#2563eb;
-  --green:#22c55e;
-  --green-l:#14532d;
-  --red:#ef4444;
-  --red-l:#451a1a;
-  --yellow:#f59e0b;
-  --yellow-l:#45310d;
-  --r:6px;
-  --font:'Inter',system-ui,sans-serif;
-  --mono:'JetBrains Mono',monospace;
-  --topbar-h:52px;
-  --nav-h:58px;
-  --sidebar-w:200px;
+:root {
+  /* ── DARK PALETTE ── */
+  --bg:        #0f1117;
+  --bg2:       #161b27;
+  --bg3:       #1e2535;
+  --white:     #1a2033;
+  --border:    #252d3f;
+  --border2:   #2f3a52;
+  --text:      #e8eaf0;
+  --text2:     #9aa5be;
+  --muted:     #5a6480;
+  --accent:    #4f8ef7;
+  --accent-l:  #1a2a4a;
+  --accent-d:  #3a72d8;
+  --green:     #22c55e;
+  --green-l:   #0d2a1a;
+  --red:       #f05252;
+  --red-l:     #2a0f0f;
+  --yellow:    #f59e0b;
+  --yellow-l:  #2a1f07;
+  --r:         6px;
+  --font:      'DM Sans', system-ui, sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+  --topbar-h:  52px;
+  --nav-h:     62px;
+  --sidebar-w: 210px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{height:100%;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100%;font-size:13px;line-height:1.5;}
-button,select,input,textarea{font-family:var(--font);font-size:13px; color: var(--text);}
+button,select,input,textarea{font-family:var(--font);font-size:13px;}
 img{max-width:100%;}
-::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-thumb{background:var(--border2); border-radius: 10px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 
-/* AUTH */
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);}
-.auth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;max-width:400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);}
-.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
-.brand-mark{width:32px;height:32px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;letter-spacing:-.3px; border-radius: 4px;}
-.brand-name{font-size:18px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
-.auth-hint{font-size:12px;color:var(--muted);margin-bottom:22px;padding-left:42px;}
-.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
-.auth-tab{flex:1;padding:8px 12px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+/* ── AUTH ── */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);background-image:radial-gradient(ellipse at 20% 50%, #1a2a4a22 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #0d2a1a22 0%, transparent 60%);}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:32px 28px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.brand-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.brand-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;border-radius:8px;letter-spacing:-.3px;box-shadow:0 4px 12px rgba(79,142,247,.3);}
+.brand-name{font-size:20px;font-weight:700;letter-spacing:-.5px;color:var(--text);}
+.brand-sub{font-size:12px;color:var(--muted);margin-bottom:26px;padding-left:48px;}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:22px;gap:4px;}
+.auth-tab{flex:1;padding:9px 12px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
 .auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 
-/* FORMS */
-.fg{margin-bottom:12px;}
-.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
-.fc{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:var(--r);font-size:13px;transition:border-color .15s;-webkit-appearance:none;}
-.fc:focus{outline:none;border-color:var(--accent);}
+/* ── FORMS ── */
+.fg{margin-bottom:14px;}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.fc{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:var(--r);font-size:13px;transition:border-color .15s;-webkit-appearance:none;}
+.fc:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.15);}
 .fc::placeholder{color:var(--muted);}
-.fc[disabled]{opacity:.5;cursor:not-allowed;background:var(--bg2);}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.fhint{font-size:11px;color:var(--muted);margin-top:3px;}
-.f-static{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;color:var(--text2);}
+.fc option{background:var(--bg3);color:var(--text);}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fhint{font-size:11px;color:var(--muted);margin-top:4px;}
+.f-static{padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:600;color:var(--text2);}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 14px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap;}
-.btn:active{opacity:.85;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover:not(:disabled){background:var(--accent-d);}
-.btn-green{background:var(--green);color:#fff;}.btn-green:hover:not(:disabled){background:#15803d;}
-.btn-red{background:var(--red);color:#fff;}.btn-red:hover:not(:disabled){background:#b91c1c;}
-.btn-ghost{background:var(--white);border:1px solid var(--border);color:var(--text2);}.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
-.btn-sm{padding:5px 10px;font-size:12px;}
-.btn-xs{padding:3px 8px;font-size:11px;}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(79,142,247,.25);}.btn-primary:hover:not(:disabled){background:var(--accent-d);box-shadow:0 4px 14px rgba(79,142,247,.35);}
+.btn-green{background:var(--green);color:#000;}.btn-green:hover:not(:disabled){filter:brightness(1.1);}
+.btn-red{background:var(--red);color:#fff;}.btn-red:hover:not(:disabled){filter:brightness(1.1);}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-xs{padding:4px 9px;font-size:11px;}
 .btn-block{width:100%;justify-content:center;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
 
-/* APP SHELL */
+/* ── ALERTS ── */
+.alert{padding:10px 12px;border-radius:var(--r);font-size:12px;margin-bottom:12px;display:none;line-height:1.5;border-left:3px solid;}
+.alert.show{display:block;}
+.alert-err{background:var(--red-l);color:#f87171;border-color:var(--red);}
+.alert-info{background:var(--yellow-l);color:var(--yellow);border-color:var(--yellow);}
+.alert-ok{background:var(--green-l);color:var(--green);border-color:var(--green);}
+
+/* ── APP SHELL ── */
 #app{display:none;flex-direction:column;min-height:100vh;}
-.topbar{position:sticky;top:0;z-index:200;height:var(--topbar-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;}
-.tb-name{font-size:14px;font-weight:700;color:var(--text);}
+.topbar{position:sticky;top:0;z-index:200;height:var(--topbar-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;}
+.tb-logo{display:flex;align-items:center;gap:9px;}
+.tb-mark{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;border-radius:6px;}
+.tb-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
 .tb-spacer{flex:1;}
-.logout-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;transition:all .12s;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+.tb-username{font-size:12px;font-weight:500;color:var(--text2);}
+@media(max-width:480px){.tb-username{display:none;}}
+.av{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;border-radius:6px;border:1px solid var(--border);}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:var(--r);transition:all .12s;}
 .logout-btn:hover{border-color:var(--red);color:var(--red);}
+.notif-btn{position:relative;background:var(--bg3);border:1px solid var(--border);width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .12s;color:var(--text2);border-radius:var(--r);}
+.notif-btn:hover{border-color:var(--accent);color:var(--accent);}
+.notif-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg2);}
 
-/* SIDEBAR & NAV */
-.sidebar{display:none;position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--border);padding:10px 8px;overflow-y:auto;z-index:100;}
-.snav-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:7px 8px;cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;text-align:left;margin-bottom:1px;transition:all .12s; border-radius: 4px;}
-.snav-btn:hover{background:var(--bg);color:var(--text);}
+/* ── FIREBASE STATUS BAR ── */
+.fb-bar{background:var(--yellow-l);border-bottom:1px solid #3a2a07;padding:6px 16px;font-size:11px;color:var(--yellow);display:flex;align-items:center;gap:8px;}
+.fb-bar.ok{background:var(--green-l);border-color:#0d2a1a;color:var(--green);}
+
+/* ── SIDEBAR ── */
+.sidebar{display:none;position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);padding:12px 8px;overflow-y:auto;z-index:100;}
+.snav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:8px 10px 4px;}
+.snav-btn{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;padding:8px 10px;cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;text-align:left;margin-bottom:2px;transition:all .12s;border-radius:var(--r);}
+.snav-btn:hover{background:var(--bg3);color:var(--text);}
 .snav-btn.active{background:var(--accent-l);color:var(--accent);font-weight:700;}
-
-.bnav{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--white);border-top:1px solid var(--border);display:flex;padding:4px 6px calc(4px + env(safe-area-inset-bottom));}
-.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:none;cursor:pointer;padding:4px 2px;color:var(--muted);font-size:9px;font-weight:600;position:relative;}
-.bnav-btn.active{color:var(--accent);}
-
-/* CARD */
-.card{background:var(--white);border:1px solid var(--border);padding:16px; border-radius: 4px;}
-.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
-
-/* CALENDAR & SLOTS */
-.cal-day{background:var(--white);border:1px solid var(--border); border-radius: 4px; overflow: hidden;}
-.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border);}
-.cal-hd.today-hd{background:var(--accent-l); border-bottom-color: var(--accent-d);}
-.cal-num{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:1px solid var(--border);flex-shrink:0;background:var(--bg); border-radius: 4px;}
-.cal-num.today{background:var(--accent);color:#fff;border-color:var(--accent);}
-
-.slot{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;transition:border-color .12s;border-left-width:3px; border-radius: 4px;}
-.slot:hover{border-color:var(--accent);}
-.slot.s-active{background:var(--accent-l); border-left-color: var(--accent);}
-
-/* MODAL */
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:flex-end;justify-content:center; backdrop-filter: blur(4px);}
-.modal{background:var(--white);border:1px solid var(--border);padding:18px 16px; width:100%; max-width:460px; border-radius: 8px 8px 0 0;}
-@media(min-width:600px){.modal{border-radius: 8px; margin-bottom: 0;}}
-
-/* BADGES */
-.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid; border-radius: 2px;}
-.bdp{background:var(--yellow-l);color:var(--yellow);border-color:var(--yellow);}.bdp::before{background:var(--yellow);}
-.bda{background:var(--green-l);color:var(--green);border-color:var(--green);}.bda::before{background:var(--green);}
-.bdr{background:var(--red-l);color:var(--red);border-color:var(--red);}.bdr::before{background:var(--red);}
-
-/* STATS */
-.stat-card{background:var(--white);border:1px solid var(--border);padding:12px 14px; border-radius: 4px;}
-.stat-val{font-size:22px;font-weight:700;color: var(--accent);}
-
-/* TOAST */
-#toast{position:fixed;bottom:calc(var(--nav-h) + 8px);left:50%;transform:translateX(-50%) translateY(12px);z-index:9999;background:var(--accent);color:#fff;padding:8px 16px;border-radius: 4px;font-size:12px;font-weight:600;}
-
+.snav-ico{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.snav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;}
 @media(min-width:768px){.sidebar{display:block;}.bnav{display:none!important;}.main-wrap{margin-left:var(--sidebar-w);}}
+
+/* ── BOTTOM NAV ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--bg2);border-top:1px solid var(--border);display:flex;padding:4px 4px calc(4px + env(safe-area-inset-bottom));}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:5px 2px;color:var(--muted);font-size:9px;font-weight:600;position:relative;}
+.bnav-btn.active{color:var(--accent);}
+.bnav-ico{font-size:18px;line-height:1.2;}
+.bnav-bdg{position:absolute;top:2px;right:8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:20px;min-width:15px;text-align:center;}
+
+/* ── CONTENT ── */
+.main-wrap{padding-bottom:calc(var(--nav-h) + 10px);}
+@media(min-width:768px){.main-wrap{padding-bottom:24px;}}
+.page{max-width:880px;margin:0 auto;padding:18px 14px;}
+@media(min-width:600px){.page{padding:24px 20px;}}
+
+/* ── CARD ── */
+.card{background:var(--bg2);border:1px solid var(--border);padding:16px;border-radius:8px;}
+.card+.card{margin-top:12px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
+
+/* ── SECTION ── */
+.section-hd{margin-bottom:18px;}
+.page-title{font-size:17px;font-weight:700;letter-spacing:-.3px;color:var(--text);}
+.page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.hd-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+@media(min-width:500px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:800px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
+.stat-card{background:var(--bg2);border:1px solid var(--border);padding:14px 16px;border-radius:8px;}
+.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px;}
+.stat-val{font-size:24px;font-weight:700;letter-spacing:-.5px;font-family:var(--mono);}
+.stat-s{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* ── WEEK NAV ── */
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.wk-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 13px;cursor:pointer;font-size:12px;font-weight:600;border-radius:var(--r);transition:all .12s;}
+.wk-btn:hover{border-color:var(--accent);color:var(--accent);}
+.wk-lbl{flex:1;font-size:12px;font-weight:600;color:var(--text2);}
+.wk-tag{display:inline-flex;padding:3px 9px;background:var(--accent-l);color:var(--accent);font-size:10px;font-weight:700;border:1px solid #1e3a6a;border-radius:20px;}
+.wk-tag.next{background:var(--yellow-l);color:var(--yellow);border-color:#3a2a07;}
+
+/* ── CALENDAR ── */
+.cal-list{display:flex;flex-direction:column;gap:10px;}
+.cal-day{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);}
+.cal-hd.today-hd{background:var(--accent-l);border-bottom-color:#1e3a6a;}
+.cal-hd-l{display:flex;align-items:center;gap:10px;}
+.cal-num{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:1px solid var(--border);flex-shrink:0;background:var(--bg2);border-radius:6px;}
+.cal-num.today{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 2px rgba(79,142,247,.3);}
+.cal-day-name{font-size:13px;font-weight:600;}
+.cal-day-date{font-size:10px;color:var(--muted);}
+.cal-slots{padding:8px 12px;display:flex;flex-direction:column;gap:6px;}
+.cal-empty{padding:12px;text-align:center;font-size:12px;color:var(--muted);}
+
+/* ── SLOT ── */
+.slot{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .12s;border-left-width:3px;border-radius:6px;}
+.slot:hover{border-color:var(--accent);background:var(--bg2);}
+.slot.s-pending{border-left-color:var(--yellow);}
+.slot.s-approved{border-left-color:var(--green);}
+.slot.s-rejected{border-left-color:var(--red);opacity:.55;}
+.slot.s-active{border-left-color:var(--accent);background:var(--accent-l);}
+.slot-body{flex:1;min-width:0;}
+.slot-loc{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+.slot-type{font-size:10px;color:var(--muted);}
+.slot-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;}
+.slot-time{font-size:11px;color:var(--text2);font-family:var(--mono);}
+.slot-sales-ct{font-size:11px;color:var(--green);font-weight:700;}
+.slot-amb{font-size:10px;font-weight:700;}
+.slot-st{font-size:10px;color:var(--muted);}
+.live-tag{font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-l);border:1px solid #1e3a6a;padding:2px 6px;flex-shrink:0;border-radius:4px;animation:pulse-border 1.5s infinite;}
+@keyframes pulse-border{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ── MODAL ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);}
+@media(min-width:600px){.modal-ov{align-items:center;}}
+.modal-ov.open{display:flex;}
+.modal{background:var(--bg2);border-top:1px solid var(--border);padding:20px 18px calc(18px + env(safe-area-inset-bottom));width:100%;max-height:92vh;overflow-y:auto;animation:slideUp .18s ease;border-radius:12px 12px 0 0;}
+@media(min-width:600px){.modal{border:1px solid var(--border);border-radius:10px;max-width:480px;padding:24px;animation:fadeIn .16s ease;}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;border-radius:var(--r);}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+
+/* ── DETAIL ── */
+.dbox{background:var(--bg3);border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;border-radius:6px;}
+.drow{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:12px;}
+.drow+.drow{border-top:1px solid var(--border);}
+.dk2{color:var(--muted);flex-shrink:0;margin-right:10px;}
+.dv{font-weight:600;text-align:right;color:var(--text);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid;border-radius:20px;}
+.badge::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0;}
+.bdp{background:var(--yellow-l);color:var(--yellow);border-color:#3a2a07;}.bdp::before{background:var(--yellow);}
+.bda{background:var(--green-l);color:var(--green);border-color:#0d3a1a;}.bda::before{background:var(--green);}
+.bdr{background:var(--red-l);color:var(--red);border-color:#3a0f0f;}.bdr::before{background:var(--red);}
+.bdx{background:var(--accent-l);color:var(--accent);border-color:#1e3a6a;}.bdx::before{background:var(--accent);}
+
+/* ── TIMER ── */
+.timer-card{background:linear-gradient(135deg,var(--accent-l),var(--bg3));border:1px solid #1e3a6a;border-left:4px solid var(--accent);padding:18px;margin-bottom:16px;border-radius:8px;}
+.tc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.tc-dot{width:7px;height:7px;background:var(--red);border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.tc-loc{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:10px;}
+.tc-timer{font-family:var(--mono);font-size:42px;font-weight:500;letter-spacing:2px;margin-bottom:14px;line-height:1;color:var(--text);}
+.tc-sc-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.tc-sc-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green);}
+.tc-sc-lbl{font-size:11px;color:var(--text2);}
+.tc-add-sale{width:100%;padding:10px;border:1px solid var(--accent);background:var(--accent-l);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;transition:all .12s;margin-bottom:8px;border-radius:var(--r);}
+.tc-add-sale:hover{background:var(--accent);color:#fff;}
+.tc-end{width:100%;padding:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;border-radius:var(--r);}
+.tc-end:hover{border-color:var(--red);color:var(--red);}
+
+/* ── SALE ITEMS ── */
+.sale-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:6px;border-radius:6px;}
+.sale-receipt{width:40px;height:40px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;border-radius:4px;}
+.sale-no-img{width:40px;height:40px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--muted);border-radius:4px;}
+.sale-mech{font-size:12px;font-weight:700;color:var(--text);}
+.sale-meta{display:flex;align-items:center;gap:5px;margin-top:3px;}
+.reg-tag{padding:2px 6px;font-size:10px;font-weight:700;border:1px solid;border-radius:4px;}
+.reg-yes{background:var(--green-l);color:var(--green);border-color:#0d3a1a;}
+.reg-no{background:var(--bg3);color:var(--muted);border-color:var(--border);}
+
+/* ── PHOTO ── */
+.photo-area{border:2px dashed var(--border2);padding:16px;text-align:center;cursor:pointer;transition:all .12s;position:relative;overflow:hidden;background:var(--bg3);border-radius:var(--r);}
+.photo-area:hover{border-color:var(--accent);}
+.photo-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+#photo-preview{width:100%;max-height:150px;object-fit:cover;margin-top:10px;display:none;border-radius:4px;}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;gap:6px;}
+.tog-opt{flex:1;padding:9px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .12s;color:var(--muted);border-radius:var(--r);}
+.tog-opt.sel{border-color:var(--green);background:var(--green-l);color:var(--green);}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:440px;}
+th{text-align:left;padding:8px 10px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--bg3);white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);}
+tr:last-child td{border:none;}
+tbody tr:hover td{background:var(--bg3);}
+tr.clickable{cursor:pointer;}
+
+/* ── MISC ── */
+.qa-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.ap-row{padding:10px 0;border-bottom:1px solid var(--border);}
+.ap-row:last-child{border:none;}
+.ap-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.ap-title{font-size:12px;font-weight:700;color:var(--text);}
+.ap-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.ap-btns{display:flex;gap:5px;flex-shrink:0;}
+.locked-bar{background:var(--yellow-l);border:1px solid #3a2a07;border-left:3px solid var(--yellow);color:var(--yellow);padding:9px 12px;font-size:12px;margin-bottom:14px;border-radius:var(--r);}
+.next-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px;margin-bottom:14px;border-radius:8px;}
+.acc-row{background:var(--bg2);border:1px solid var(--border);padding:14px;margin-bottom:10px;border-radius:8px;}
+.acc-name{font-size:13px;font-weight:700;color:var(--text);}
+.acc-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.acc-btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+
+/* ── USER MANAGER (admin panel) ── */
+.um-user{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.um-user:last-child{border:none;}
+.um-info{flex:1;}
+.um-name{font-size:13px;font-weight:700;color:var(--text);}
+.um-email{font-size:11px;color:var(--muted);margin-top:1px;}
+.um-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.role-pill{padding:3px 9px;font-size:10px;font-weight:700;border-radius:20px;border:1px solid;}
+.role-coordinator{background:#1a2a4a;color:var(--accent);border-color:#1e3a6a;}
+.role-ambassador{background:var(--green-l);color:var(--green);border-color:#0d3a1a;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 10px);left:50%;transform:translateX(-50%) translateY(14px);z-index:9999;background:var(--bg3);color:var(--text);padding:9px 18px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:all .24s;pointer-events:none;max-width:90vw;text-align:center;border-radius:var(--r);border:1px solid var(--border);}
+@media(min-width:768px){#toast{bottom:16px;}}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.terr{background:var(--red-l);border-color:var(--red);color:var(--red);}
+#toast.twarn{background:var(--yellow-l);border-color:var(--yellow);color:var(--yellow);}
+#toast.tgreen{background:var(--green-l);border-color:var(--green);color:var(--green);}
+
+/* ── LOADING ── */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:10000;}
+.loading-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:ldot .8s infinite alternate;}
+@keyframes ldot{from{opacity:.2;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.loading-dots{display:flex;gap:6px;}
+.loading-dots span:nth-child(2){animation-delay:.15s;}
+.loading-dots span:nth-child(3){animation-delay:.3s;}
+
+@media print{.topbar,.bnav,.sidebar,.btn,#toast,.modal-ov{display:none!important;}.main-wrap{margin:0!important;}}
 </style>
 </head>
 <body>
 
-<div id="auth-screen" class="auth-wrap">
+<!-- LOADING -->
+<div class="loading-screen" id="loading-screen">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent-d));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">BT</div>
+    <span style="font-size:16px;font-weight:700;letter-spacing:-.3px">Brand Tool</span>
+  </div>
+  <div class="loading-dots">
+    <span class="loading-dot"></span>
+    <span class="loading-dot"></span>
+    <span class="loading-dot"></span>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="auth-screen" class="auth-wrap" style="display:none">
   <div class="auth-card">
     <div class="brand-row"><div class="brand-mark">BT</div><div class="brand-name">Brand Tool</div></div>
-    <div class="auth-hint">Platforma dla ambasadorów marki</div>
+    <div class="brand-sub">Platform dla ambasadorow marki</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login')">Logowanie</button>
       <button class="auth-tab" onclick="switchAuthTab('register')">Rejestracja</button>
     </div>
+
+    <!-- LOGIN -->
     <div id="auth-login-panel">
       <div id="login-err" class="alert alert-err"></div>
       <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="login-email" placeholder="twoj@email.pl" autocomplete="email"></div>
-      <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="btn btn-primary btn-block" onclick="doLogin()">Zaloguj się</button>
+      <div class="fg"><label class="fl">Haslo</label><input type="password" class="fc" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">Zaloguj sie</button>
     </div>
+
+    <!-- REGISTER -->
     <div id="auth-register-panel" style="display:none">
       <div id="reg-err" class="alert alert-err"></div>
       <div id="reg-ok" class="alert alert-ok"></div>
       <div class="fr">
-        <div class="fg"><label class="fl">Imię</label><input type="text" class="fc" id="reg-first" placeholder="Anna"></div>
+        <div class="fg"><label class="fl">Imie</label><input type="text" class="fc" id="reg-first" placeholder="Anna"></div>
         <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="reg-last" placeholder="Nowak"></div>
       </div>
       <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="reg-email" placeholder="twoj@email.pl"></div>
-      <div class="fg"><label class="fl">Hasło</label><input type="password" class="fc" id="reg-pass" placeholder="min. 6 znaków"></div>
+      <div class="fg"><label class="fl">Haslo</label><input type="password" class="fc" id="reg-pass" placeholder="min. 6 znakow"></div>
       <div class="fg"><label class="fl">Koordynator</label><select class="fc" id="reg-sv"><option value="">Wybierz koordynatora...</option></select></div>
-      <div class="fg"><label class="fl">Kod dostępu</label><input type="text" class="fc" id="reg-code" placeholder="np. TEAM2024" style="text-transform:uppercase"></div>
-      <div class="fhint" style="margin-top:-8px;margin-bottom:12px">Kod otrzymujesz od koordynatora. Konto wymaga zatwierdzenia.</div>
-      <button class="btn btn-primary btn-block" onclick="doRegister()">Utwórz konto</button>
+      <div class="fg"><label class="fl">Kod dostepu</label><input type="text" class="fc" id="reg-code" placeholder="np. TEAM2024" style="text-transform:uppercase"></div>
+      <div class="fhint" style="margin-top:-8px;margin-bottom:14px">Kod otrzymujesz od koordynatora. Konto wymaga zatwierdzenia.</div>
+      <button class="btn btn-primary btn-block" onclick="doRegister()">Utworz konto</button>
     </div>
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="topbar">
     <div class="tb-logo"><div class="tb-mark">BT</div><div class="tb-name">Brand Tool</div></div>
     <div class="tb-spacer"></div>
     <div class="tb-right">
       <button class="notif-btn" id="notif-btn" onclick="showPanel('notifications')" title="Powiadomienia">
-        🔔<span class="notif-dot" id="notif-dot" style="display:none"></span>
+        &#x1F514;<span class="notif-dot" id="notif-dot" style="display:none"></span>
       </button>
       <div class="av" id="topbar-av"></div>
       <span class="tb-username" id="topbar-nm"></span>
       <button class="logout-btn" onclick="logout()">Wyloguj</button>
     </div>
   </div>
+  <div id="fb-status-bar"></div>
   <div class="sidebar" id="sidebar"></div>
   <div class="bnav" id="bnav"></div>
   <div class="main-wrap"><div class="page" id="main-content"></div></div>
 </div>
 
 <div id="toast"></div>
-
 <div class="modal-ov" id="modal-ov" onclick="closeModalBg(event)">
   <div class="modal" id="modal-box">
-    <div class="modal-hd">
-      <div class="modal-title" id="modal-ttl"></div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
+    <div class="modal-hd"><div class="modal-title" id="modal-ttl"></div><button class="modal-close" onclick="closeModal()">&#x2715;</button></div>
     <div id="modal-body"></div>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════
+     FIREBASE GUIDE — jak skonfigurować Firebase
+     ═══════════════════════════════════════════════════
+
+  1. Idź na https://console.firebase.google.com
+  2. "Add project" → nazwa np. "brand-tool"
+  3. W projekcie: "Build" → "Firestore Database" → "Create database" → Start in test mode
+  4. "Build" → "Authentication" → "Get started" → włącz "Email/Password"
+  5. Kliknij ikonę zębatki (Settings) → "Project settings" → "Your apps" → dodaj Web App
+  6. Skopiuj firebaseConfig i wklej na górze tego pliku (w miejscu TWOJ_API_KEY etc.)
+  7. W Firestore stwórz kolekcję "users" i dodaj dokument z ID = UID Twojego konta:
+     {
+       firstName: "Admin",
+       lastName: "Koordynator",
+       email: "admin@mojafirma.pl",
+       role: "coordinator",
+       status: "active",
+       color: "#4f8ef7",
+       svId: null,
+       createdAt: (timestamp)
+     }
+  8. WAŻNE - Firestore Rules (opcjonalnie dla bezpieczeństwa):
+     rules_version = '2';
+     service cloud.firestore {
+       match /databases/{database}/documents {
+         match /{document=**} {
+           allow read, write: if request.auth != null;
+         }
+       }
+     }
+
+  FALLBACK: Jeśli Firebase NIE jest skonfigurowany, aplikacja działa w trybie demo
+  z danymi lokalnymi (localStorage). Idealne do testów przed podpięciem bazy!
+     ═══════════════════════════════════════════════════ -->
+
 <script>
-const LS_KEY='brandtool_v2';
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}}
-function loadDB(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r);}catch(e){}return null;}
+// ═══════════════════════════════════════════════════════
+// KONFIGURACJA ADMINA
+// ═══════════════════════════════════════════════════════
+const ADMIN_EMAIL   = 'admin@mojafirma.pl';  // ← zmień na swój e-mail
+const ADMIN_PASS    = 'admin123';             // ← zmień na swoje hasło (tylko tryb demo)
+const ACCESS_CODE   = 'TEAM2024';            // ← kod rejestracyjny dla ambasadorów
+const RATE_PER_HOUR = 25;                    // ← stawka godzinowa w PLN
 
-const ACCESS_CODE='TEAM2024';
-const SHOP_TYPES=['Żabka','Biedronka','Lidl','Rossmann','Empik','Carrefour','Action','Media Markt','Inne','Akcja Lotna'];
+// ═══════════════════════════════════════════════════════
+// LOCAL STORAGE FALLBACK (używany gdy Firebase nie skonfigurowany)
+// ═══════════════════════════════════════════════════════
+const LS_KEY = 'brandtool_v3';
+function saveLocal(){try{localStorage.setItem(LS_KEY, JSON.stringify(DB));}catch(e){}}
+function loadLocal(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r);}catch(e){}return null;}
 
-let DB={
-  users:[
-    {id:'U1',firstName:'Kamila',lastName:'Kowalska',email:'koord@brand.pl',pass:'1234',role:'coordinator',svId:null,status:'active',color:'#3b82f6',createdAt:Date.now()-9e8},
-    {id:'U2',firstName:'Anna',lastName:'Nowak',email:'anna@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#3b82f6',createdAt:Date.now()-7e8},
-    {id:'U3',firstName:'Marta',lastName:'Wiśniewska',email:'marta@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#22c55e',createdAt:Date.now()-6e8},
-    {id:'U4',firstName:'Piotr',lastName:'Zając',email:'piotr@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#f59e0b',createdAt:Date.now()-5e8},
+const SHOP_TYPES = ['Zabka','Biedronka','Lidl','Rossmann','Empik','Carrefour','Action','Media Markt','Inne','Akcja Lotna'];
+
+let DB = {
+  users: [],
+  pendingAccounts: [],
+  locations: [
+    {id:'L1', address:'ul. Woloska 12, Warszawa',    shopType:'Zabka',   note:''},
+    {id:'L2', address:'Al. Jerozolimskie 44, Warszawa', shopType:'Biedronka', note:''},
+    {id:'L3', address:'ul. Marszalkowska 5, Warszawa', shopType:'Akcja Lotna', note:''},
   ],
-  pendingAccounts:[],
-  locations:[
-    {id:'L1',address:'ul. Wołoska 12, Warszawa',shopType:'Żabka',note:''},
-    {id:'L2',address:'Al. Jerozolimskie 44, Warszawa',shopType:'Biedronka',note:''},
-    {id:'L3',address:'ul. Marszałkowska 5, Warszawa',shopType:'Akcja Lotna',note:''},
+  mechanisms: [
+    {id:'M1', name:'Probka produktu',    active:true},
+    {id:'M2', name:'Karta lojalnosciowa', active:true},
+    {id:'M3', name:'Rejestracja aplikacji', active:true},
   ],
-  mechanisms:[
-    {id:'M1',name:'Próbka produktu',active:true},
-    {id:'M2',name:'Karta lojalnościowa',active:true},
-    {id:'M3',name:'Rejestracja aplikacji',active:true},
-  ],
-  actions:[],
-  nextId:100,
+  actions: [],
+  nextId: 100,
 };
 
-const DAYS=['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
-function uid(){const id='X'+(DB.nextId++);save();return id;}
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+const DAYS = ['Poniedzialek','Wtorek','Sroda','Czwartek','Piatek','Sobota','Niedziela'];
+function uid(){const id='X'+(DB.nextId++);saveLocal();return id;}
 function getMon(off=0){const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);const m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);m.setDate(m.getDate()+off*7);return m;}
 function getWeek(off=0){const m=getMon(off);return Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(d.getDate()+i);return d;});}
 function dk(d){return d.toISOString().slice(0,10);}
@@ -244,63 +528,163 @@ function slbl(s,active){if(active)return'Aktywna';return{pending:'Oczekuje',appr
 function sdc(s,active){return active?'x':s==='pending'?'p':s==='approved'?'a':'r';}
 function bdcls(s,active){return active?'bdx':s==='pending'?'bdp':s==='approved'?'bda':'bdr';}
 function canEditNextWeek(){return new Date().getDay()>=3;}
-
 function toast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className='show t'+type;clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3200);}
 
-let CU=null,weekOff=0,timerInt=null,saleRegVal=true,salePhotoData=null,currentPanel='';
+let CU=null, weekOff=0, timerInt=null, saleRegVal=true, salePhotoData=null, currentPanel='';
+let FIREBASE_MODE = false;
 
-/* AUTH */
+// ═══════════════════════════════════════════════════════
+// FIREBASE SYNC HELPERS
+// ═══════════════════════════════════════════════════════
+async function fbSave(collection, docId, data) {
+  if (!FIREBASE_MODE) { saveLocal(); return; }
+  try {
+    const {db, doc, setDoc} = window._FB;
+    await setDoc(doc(db, collection, docId), data);
+  } catch(e) { console.error('FB save error:', e); saveLocal(); }
+}
+
+async function fbGet(collName) {
+  if (!FIREBASE_MODE) return null;
+  try {
+    const {db, collection, getDocs} = window._FB;
+    const snap = await getDocs(collection(db, collName));
+    return snap.docs.map(d => ({id: d.id, ...d.data()}));
+  } catch(e) { console.error('FB get error:', e); return null; }
+}
+
+async function fbDelete(collName, docId) {
+  if (!FIREBASE_MODE) { saveLocal(); return; }
+  try {
+    const {db, doc, deleteDoc} = window._FB;
+    await deleteDoc(doc(db, collName, docId));
+  } catch(e) { console.error('FB delete error:', e); }
+}
+
+async function loadFromFirebase() {
+  const [users, locations, mechanisms, actions, pending] = await Promise.all([
+    fbGet('users'), fbGet('locations'), fbGet('mechanisms'),
+    fbGet('actions'), fbGet('pendingAccounts')
+  ]);
+  if (users)      DB.users           = users;
+  if (locations)  DB.locations       = locations.length ? locations : DB.locations;
+  if (mechanisms) DB.mechanisms      = mechanisms.length ? mechanisms : DB.mechanisms;
+  if (actions)    DB.actions         = actions;
+  if (pending)    DB.pendingAccounts = pending;
+}
+
+async function saveUser(u) { await fbSave('users', u.id, u); saveLocal(); }
+async function saveAction(a) { await fbSave('actions', a.id, a); saveLocal(); }
+async function saveLocation(l) { await fbSave('locations', l.id, l); saveLocal(); }
+async function saveMechanism(m) { await fbSave('mechanisms', m.id, m); saveLocal(); }
+async function savePending(p) { await fbSave('pendingAccounts', p.id, p); saveLocal(); }
+async function delAction(id) { await fbDelete('actions', id); DB.actions=DB.actions.filter(a=>a.id!==id); saveLocal(); }
+async function delUser(id) { await fbDelete('users', id); DB.users=DB.users.filter(u=>u.id!==id); saveLocal(); }
+async function delPending(id) { await fbDelete('pendingAccounts', id); DB.pendingAccounts=DB.pendingAccounts.filter(p=>p.id!==id); saveLocal(); }
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
 function switchAuthTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
-  document.getElementById('auth-login-panel').style.display=tab==='login'?'block':'none';
-  document.getElementById('auth-register-panel').style.display=tab==='register'?'block':'none';
-  if(tab==='register')populateSVSelect();
+  document.getElementById('auth-login-panel').style.display  = tab==='login'    ? 'block' : 'none';
+  document.getElementById('auth-register-panel').style.display = tab==='register' ? 'block' : 'none';
+  if(tab==='register') populateSVSelect();
 }
+
 function populateSVSelect(){
-  const sel=document.getElementById('reg-sv');if(!sel)return;
-  const coords=DB.users.filter(u=>u.role==='coordinator'&&u.status==='active');
-  sel.innerHTML=`<option value="">Wybierz koordynatora...</option>`+coords.map(c=>`<option value="${c.id}">${fullName(c)}</option>`).join('');
+  const sel = document.getElementById('reg-sv');if(!sel)return;
+  const coords = DB.users.filter(u=>u.role==='coordinator'&&u.status==='active');
+  sel.innerHTML = `<option value="">Wybierz koordynatora...</option>` +
+    coords.map(c=>`<option value="${c.id}">${fullName(c)}</option>`).join('');
 }
-function doLogin(){
-  const email=document.getElementById('login-email').value.trim().toLowerCase();
-  const pass=document.getElementById('login-pass').value;
-  const err=document.getElementById('login-err');
-  err.className='alert alert-err';
-  const u=DB.users.find(u=>u.email.toLowerCase()===email&&u.pass===pass);
-  if(!u){err.innerHTML='Nieprawidłowy e-mail lub hasło';err.className='alert alert-err show';return;}
-  if(u.status==='pending'){err.innerHTML='Konto czeka na zatwierdzenie przez koordynatora';err.className='alert alert-err show';return;}
-  if(u.status==='blocked'){err.innerHTML='Konto zostało zablokowane';err.className='alert alert-err show';return;}
-  CU=u;
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-err');
+  err.className = 'alert alert-err';
+
+  if (FIREBASE_MODE) {
+    try {
+      const {auth, signInWithEmailAndPassword, db, doc, getDoc} = window._FB;
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      const uid  = cred.user.uid;
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (!snap.exists()) {
+        err.innerHTML = 'Nie znaleziono profilu uzytkownika w bazie';
+        err.className = 'alert alert-err show'; return;
+      }
+      const uData = {id: uid, ...snap.data()};
+      if (uData.status === 'pending')  { err.innerHTML='Konto czeka na zatwierdzenie'; err.className='alert alert-err show'; return; }
+      if (uData.status === 'blocked')  { err.innerHTML='Konto zostalo zablokowane';    err.className='alert alert-err show'; return; }
+      CU = uData;
+      await loadFromFirebase();
+      enterApp();
+    } catch(e) {
+      err.innerHTML = 'Nieprawidlowy e-mail lub haslo';
+      err.className = 'alert alert-err show';
+    }
+  } else {
+    // DEMO MODE
+    const u = DB.users.find(u=>u.email.toLowerCase()===email && u.pass===pass);
+    if (!u)                  { err.innerHTML='Nieprawidlowy e-mail lub haslo';  err.className='alert alert-err show'; return; }
+    if (u.status==='pending'){ err.innerHTML='Konto czeka na zatwierdzenie';     err.className='alert alert-err show'; return; }
+    if (u.status==='blocked'){ err.innerHTML='Konto zostalo zablokowane';        err.className='alert alert-err show'; return; }
+    CU = u;
+    enterApp();
+  }
+}
+
+async function doRegister(){
+  const first = document.getElementById('reg-first').value.trim();
+  const last  = document.getElementById('reg-last').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  const svId  = document.getElementById('reg-sv').value;
+  const code  = document.getElementById('reg-code').value.trim().toUpperCase();
+  const err   = document.getElementById('reg-err');
+  const ok    = document.getElementById('reg-ok');
+  err.className = 'alert alert-err'; ok.className = 'alert alert-ok';
+
+  if (!first||!last)             { err.innerHTML='Podaj imie i nazwisko';       err.className='alert alert-err show'; return; }
+  if (!email||!email.includes('@')){ err.innerHTML='Podaj prawidlowy e-mail';   err.className='alert alert-err show'; return; }
+  if (pass.length<6)             { err.innerHTML='Haslo min. 6 znakow';         err.className='alert alert-err show'; return; }
+  if (!svId)                     { err.innerHTML='Wybierz koordynatora';        err.className='alert alert-err show'; return; }
+  if (code !== ACCESS_CODE)      { err.innerHTML='Nieprawidlowy kod dostepu';   err.className='alert alert-err show'; return; }
+  if (DB.users.find(u=>u.email.toLowerCase()===email)){ err.innerHTML='E-mail juz zarejestrowany'; err.className='alert alert-err show'; return; }
+
+  const p = {id:'PA'+Date.now(), firstName:first, lastName:last, email, pass, role:'ambassador', svId, status:'pending', color:'#4f8ef7', createdAt:Date.now()};
+  DB.pendingAccounts.push(p);
+  await savePending(p);
+  updateNotifDot();
+  ok.innerHTML = 'Konto utworzone — czeka na zatwierdzenie przez koordynatora.';
+  ok.className = 'alert alert-ok show';
+  ['reg-first','reg-last','reg-email','reg-pass','reg-code'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+
+function enterApp(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
   const av=document.getElementById('topbar-av');
-  av.textContent=ini(CU);av.style.cssText=`background:${CU.color}22;color:${CU.color};border:1px solid ${CU.color}44`;
+  av.textContent=ini(CU);
+  av.style.cssText=`background:${CU.color}22;color:${CU.color};border:1px solid ${CU.color}44`;
   document.getElementById('topbar-nm').textContent=fullName(CU);
-  buildNav();updateNotifDot();
-  showPanel(CU.role==='coordinator'?'coord-dashboard':'amb-dashboard');
+  // Firebase status bar
+  const bar = document.getElementById('fb-status-bar');
+  if (FIREBASE_MODE) {
+    bar.innerHTML = `<div class="fb-bar ok">&#x2705; Firebase aktywny — dane synchronizowane w chmurze</div>`;
+  } else {
+    bar.innerHTML = `<div class="fb-bar">&#x26A0;&#xFE0F; Tryb demo — dane lokalne (localStorage). Wklej config Firebase aby wlaczyc chmure.</div>`;
+  }
+  buildNav(); updateNotifDot();
+  showPanel(CU.role==='coordinator' ? 'coord-dashboard' : 'amb-dashboard');
 }
-function doRegister(){
-  const first=document.getElementById('reg-first').value.trim();
-  const last=document.getElementById('reg-last').value.trim();
-  const email=document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass=document.getElementById('reg-pass').value;
-  const svId=document.getElementById('reg-sv').value;
-  const code=document.getElementById('reg-code').value.trim().toUpperCase();
-  const err=document.getElementById('reg-err');const ok=document.getElementById('reg-ok');
-  err.className='alert alert-err';ok.className='alert alert-ok';
-  if(!first||!last){err.innerHTML='Podaj imię i nazwisko';err.className='alert alert-err show';return;}
-  if(!email||!email.includes('@')){err.innerHTML='Podaj prawidłowy e-mail';err.className='alert alert-err show';return;}
-  if(pass.length<6){err.innerHTML='Hasło musi mieć min. 6 znaków';err.className='alert alert-err show';return;}
-  if(!svId){err.innerHTML='Wybierz koordynatora';err.className='alert alert-err show';return;}
-  if(code!==ACCESS_CODE){err.innerHTML='Nieprawidłowy kod dostępu';err.className='alert alert-err show';return;}
-  if(DB.users.find(u=>u.email.toLowerCase()===email)){err.innerHTML='Ten e-mail jest już zarejestrowany';err.className='alert alert-err show';return;}
-  DB.pendingAccounts.push({id:'PA'+Date.now(),firstName:first,lastName:last,email,pass,role:'ambassador',svId,status:'pending',color:'#3b82f6',createdAt:Date.now()});
-  save();updateNotifDot();
-  ok.innerHTML='Konto zostało utworzone i czeka na zatwierdzenie.';ok.className='alert alert-ok show';
-  ['reg-first','reg-last','reg-email','reg-pass','reg-code'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-}
-function logout(){
-  CU=null;weekOff=0;if(timerInt){clearInterval(timerInt);timerInt=null;}
+
+async function logout(){
+  CU=null; weekOff=0;
+  if (timerInt){ clearInterval(timerInt); timerInt=null; }
+  if (FIREBASE_MODE){ try{ await window._FB.signOut(window._FB.auth); }catch(e){} }
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('login-email').value='';
@@ -308,27 +692,48 @@ function logout(){
   document.getElementById('login-err').className='alert alert-err';
 }
 
-/* NAV */
-const AMB_TABS=[{id:'amb-dashboard',ico:'📊',lbl:'Dashboard'},{id:'amb-actions',ico:'⚡',lbl:'Akcje'},{id:'amb-schedule',ico:'📅',lbl:'Grafik'},{id:'amb-stats',ico:'📈',lbl:'Statystyki'}];
-const COORD_TABS=[{id:'coord-dashboard',ico:'📊',lbl:'Dashboard'},{id:'coord-schedule',ico:'📅',lbl:'Grafik'},{id:'coord-approvals',ico:'✅',lbl:'Zatwierdzenia'},{id:'coord-accounts',ico:'👥',lbl:'Konta'},{id:'coord-team',ico:'🏆',lbl:'Zespół'},{id:'coord-mechanisms',ico:'⚙️',lbl:'Mechanizmy'},{id:'coord-report',ico:'📑',lbl:'Raport'}];
+// ═══════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════
+const AMB_TABS = [
+  {id:'amb-dashboard', ico:'🏠', lbl:'Dashboard'},
+  {id:'amb-actions',   ico:'⚡', lbl:'Akcje'},
+  {id:'amb-schedule',  ico:'📅', lbl:'Grafik'},
+  {id:'amb-stats',     ico:'📊', lbl:'Statystyki'},
+];
+const COORD_TABS = [
+  {id:'coord-dashboard',  ico:'🏠', lbl:'Dashboard'},
+  {id:'coord-schedule',   ico:'📅', lbl:'Grafik'},
+  {id:'coord-approvals',  ico:'✅', lbl:'Zatwierdzenia'},
+  {id:'coord-accounts',   ico:'👤', lbl:'Konta'},
+  {id:'coord-team',       ico:'👥', lbl:'Zespol'},
+  {id:'coord-mechanisms', ico:'⚙️',  lbl:'Mechanizmy'},
+  {id:'coord-users',      ico:'🛡️',  lbl:'Uzytkownicy'},
+  {id:'coord-report',     ico:'📋', lbl:'Raport'},
+];
 
 function buildNav(){
   const tabs=CU.role==='coordinator'?COORD_TABS:AMB_TABS;
   const pAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id).length;
   const pAct=DB.actions.filter(a=>a.status==='pending').length;
+
   document.getElementById('bnav').innerHTML=tabs.slice(0,4).map(t=>{
-    const bdg=(t.id==='coord-accounts'&&pAcc)||(t.id==='coord-approvals'&&pAct)?`<span class="bnav-bdg">${t.id==='coord-accounts'?pAcc:pAct}</span>`:'';
+    const n=t.id==='coord-accounts'?pAcc:t.id==='coord-approvals'?pAct:0;
+    const bdg=n>0?`<span class="bnav-bdg">${n}</span>`:'';
     return`<button class="bnav-btn" id="bn-${t.id}" onclick="showPanel('${t.id}')"><span class="bnav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
   }).join('');
+
   let s=`<div class="snav-section">Menu</div>`;
   tabs.forEach(t=>{
-    const bdg=(t.id==='coord-accounts'&&pAcc)||(t.id==='coord-approvals'&&pAct)?`<span class="snav-badge">${t.id==='coord-accounts'?pAcc:pAct}</span>`:'';
+    const n=t.id==='coord-accounts'?pAcc:t.id==='coord-approvals'?pAct:0;
+    const bdg=n>0?`<span class="snav-badge">${n}</span>`:'';
     s+=`<button class="snav-btn" id="sn-${t.id}" onclick="showPanel('${t.id}')"><span class="snav-ico">${t.ico}</span>${t.lbl}${bdg}</button>`;
   });
-  s+=`<div class="snav-section" style="margin-top:8px">Eksport</div>`;
-  s+=`<button class="snav-btn" onclick="exportExcel()"><span class="snav-ico">📄</span>Pobierz Excel</button>`;
+  s+=`<div class="snav-section" style="margin-top:10px">Eksport</div>`;
+  s+=`<button class="snav-btn" onclick="exportExcel()"><span class="snav-ico">📥</span>Pobierz Excel</button>`;
   document.getElementById('sidebar').innerHTML=s;
 }
+
 function setNav(id){
   document.querySelectorAll('.bnav-btn,.snav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('bn-'+id)?.classList.add('active');
@@ -340,37 +745,45 @@ function updateNotifDot(){
   if(dot)dot.style.display=count>0?'block':'none';
 }
 function showPanel(id){
-  currentPanel=id;setNav(id);buildNav();updateNotifDot();
-  const renders={'amb-dashboard':renderAmbDashboard,'amb-actions':renderAmbActions,'amb-schedule':renderAmbSchedule,'amb-stats':renderAmbStats,'coord-dashboard':renderCoordDashboard,'coord-schedule':renderCoordSchedule,'coord-approvals':renderCoordApprovals,'coord-accounts':renderCoordAccounts,'coord-team':renderCoordTeam,'coord-mechanisms':renderCoordMechanisms,'coord-report':renderCoordReport,'notifications':renderNotifications};
+  currentPanel=id; setNav(id); buildNav(); updateNotifDot();
+  const renders={
+    'amb-dashboard':renderAmbDashboard,'amb-actions':renderAmbActions,
+    'amb-schedule':renderAmbSchedule,'amb-stats':renderAmbStats,
+    'coord-dashboard':renderCoordDashboard,'coord-schedule':renderCoordSchedule,
+    'coord-approvals':renderCoordApprovals,'coord-accounts':renderCoordAccounts,
+    'coord-team':renderCoordTeam,'coord-mechanisms':renderCoordMechanisms,
+    'coord-users':renderCoordUsers,'coord-report':renderCoordReport,
+    'notifications':renderNotifications
+  };
   document.getElementById('main-content').innerHTML=(renders[id]||(() => ''))();
   if(timerInt)checkTimer();
   window.scrollTo(0,0);
 }
 
-/* CALENDAR & CORE LOGIC (Rest remains same as original script) */
-function buildCalDay(day,idx,actions,isCoord,locked){
-  const dateKey=dk(day);
-  const todHd=isToday(day)?'today-hd':'';
-  const todN=isToday(day)?'today':'';
+// ═══════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════
+function buildCalDay(day, idx, actions, isCoord, locked){
+  const dateKey=dk(day), todHd=isToday(day)?'today-hd':'', todN=isToday(day)?'today':'';
   const mm=String(day.getMonth()+1).padStart(2,'0');
   const addFn=isCoord?`openCoordAddAction('${dateKey}')`:`openAddAction('${dateKey}')`;
   const addDis=(!isCoord&&(locked||actions.length>=2))?'disabled':'';
   let h=`<div class="cal-day"><div class="cal-hd ${todHd}"><div class="cal-hd-l"><div class="cal-num ${todN}">${day.getDate()}</div><div><div class="cal-day-name">${DAYS[idx]}</div><div class="cal-day-date">${mm}.${day.getFullYear()}</div></div></div><button class="btn btn-sm btn-primary" ${addDis} onclick="${addFn}">+ Dodaj</button></div>`;
-  if(!actions.length){h+=`<div class="cal-empty">Brak akcji</div>`;}
+  if(!actions.length){ h+=`<div class="cal-empty">Brak akcji</div>`; }
   else{
     h+=`<div class="cal-slots">`;
     actions.forEach(a=>{
-      const l=getL(a.locationId);const u=getU(a.ambassadorId);const active=a.startedAt&&!a.endedAt;const sc=sdc(a.status,active);const sales=(a.sales||[]).length;
-      h+=`<div class="slot s-${sdc(a.status,active)}" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.address||'?'}</div><div class="slot-type">${l?.shopType||''}</div><div class="slot-meta"><span class="slot-time">${a.startTime}–${a.endTime}</span>${sales>0?`<span class="slot-sales-ct"> · ${sales} sprzedaży`:''}${isCoord?` · <span class="slot-amb" style="color:${u?.color||'#666'}">${fullName(u)}</span>`:''}${sales>0?'</span>':''}<span class="slot-st"> · ${slbl(a.status,active)}</span></div></div>${active?`<span class="live-tag">LIVE</span>`:''}</div>`;
+      const l=getL(a.locationId),u=getU(a.ambassadorId),active=a.startedAt&&!a.endedAt,sales=(a.sales||[]).length;
+      h+=`<div class="slot s-${sdc(a.status,active)}" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.address||'?'}</div><div class="slot-type">${l?.shopType||''}</div><div class="slot-meta"><span class="slot-time">${a.startTime}–${a.endTime}</span>${sales>0?`<span class="slot-sales-ct">${sales} sprzed.</span>`:''}${isCoord?`<span class="slot-amb" style="color:${u?.color||'#888'}">${fullName(u)}</span>`:''}<span class="slot-st">${slbl(a.status,active)}</span></div></div>${active?`<span class="live-tag">LIVE</span>`:''}</div>`;
     });
     h+=`</div>`;
   }
   return h+`</div>`;
 }
 
-/* [ ... REMAINDER OF YOUR LOGIC FUNCTIONS: renderAmbDashboard, renderAmbActions, submitSale, etc ... ] */
-/* Included below for completeness but shortened for space where identical */
-
+// ═══════════════════════════════════════════════════════
+// AMB PANELS
+// ═══════════════════════════════════════════════════════
 function renderAmbDashboard(){
   const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
   const wkKeys=new Set(getWeek(0).map(dk));
@@ -378,116 +791,725 @@ function renderAmbDashboard(){
   const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);
   const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);
   const approved=tw.filter(a=>a.status==='approved').length;
+  const pending=tw.filter(a=>a.status==='pending').length;
+  const rejected=tw.filter(a=>a.status==='rejected').length;
   const active=mine.find(a=>a.startedAt&&!a.endedAt);
   const todayKey=dk(new Date());
   const upcoming=mine.filter(a=>a.status==='approved'&&a.date>=todayKey&&!a.startedAt&&!a.endedAt).sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime)));
   const next=upcoming[0];
-  let h=`<div class="section-hd"><div class="page-title">Witaj, ${CU.firstName}</div><div class="page-sub">Bieżący tydzień — ${fmtD(getWeek(0)[0])} – ${fmtD(getWeek(0)[6])}</div></div>`;
+  let h=`<div class="section-hd"><div class="page-title">Witaj, ${CU.firstName} 👋</div><div class="page-sub">Biezacy tydzien — ${fmtD(getWeek(0)[0])} – ${fmtD(getWeek(0)[6])}</div></div>`;
   if(active){h+=`<div id="ti-inject">${buildTimerCard(active.id)}</div>`;setTimeout(()=>startTimerUI(active.id),80);}
-  if(!active&&next){
-    const loc=getL(next.locationId);
-    h+=`<div class="next-card"><div style="font-size:12px;font-weight:700;margin-bottom:4px">Najbliższa akcja: ${next.date} o ${next.startTime}</div><div style="font-size:11px;color:var(--muted)">${loc?.shopType} — ${loc?.address?.split(',')[0]}</div></div>`;
-  }
-  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Zaplanowane h</div><div class="stat-val">${ph.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaże</div><div class="stat-val" style="color:var(--green)">${sales}</div></div><div class="stat-card"><div class="stat-lbl">Zatwierdzone</div><div class="stat-val">${approved}</div></div></div>`;
-  return h;
+  if(!active&&next){const isNextToday=next.date===todayKey;const minsUntil=isNextToday?t2m(next.startTime)-t2m(nowStr()):-1;const canStart=isNextToday&&minsUntil<=30&&minsUntil>=-5;const loc=getL(next.locationId);
+    h+=`<div class="next-card"><div style="font-size:12px;font-weight:700;margin-bottom:4px">Najblizsa akcja: ${next.date} o ${next.startTime}</div><div style="font-size:11px;color:var(--muted)">${loc?.shopType} — ${loc?.address?.split(',')[0]}</div><div style="margin-top:10px">${canStart?`<button class="btn btn-green btn-sm" onclick="startAction('${next.id}')">▶ Rozpocznij akcje</button>`:`<span style="font-size:11px;color:var(--muted)">Start o ${next.startTime}</span>`}</div></div>`;}
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Zaplanowane h</div><div class="stat-val">${ph.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${sales}</div></div><div class="stat-card"><div class="stat-lbl">Zatwierdzone</div><div class="stat-val" style="color:var(--green)">${approved}</div></div><div class="stat-card"><div class="stat-lbl">Oczekujace</div><div class="stat-val" style="color:var(--yellow)">${pending}</div><div class="stat-s">${rejected} odrzuconych</div></div></div>`;
+  h+=`<div class="card"><div class="card-hd"><div class="card-title">Akcje tego tygodnia</div><button class="btn btn-ghost btn-sm" onclick="showPanel('amb-schedule')">Grafik →</button></div>`;
+  if(!tw.length){h+=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Brak akcji w tym tygodniu</div>`;}
+  else{tw.sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime))).forEach(a=>{const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;h+=`<div class="slot s-${sdc(a.status,act)}" style="margin-bottom:6px" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.address||'?'}</div><div class="slot-meta"><span class="slot-time">${a.date} ${a.startTime}–${a.endTime}</span>${(a.sales?.length||0)>0?`<span class="slot-sales-ct">${a.sales.length} sprzedazy</span>`:''}<span class="slot-st">${slbl(a.status,act)}</span></div></div>${act?`<span class="live-tag">LIVE</span>`:''}<span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></div>`;});}
+  return h+`</div>`;
 }
 
+function renderAmbActions(){
+  const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
+  const todayKey=dk(new Date());
+  const active=mine.find(a=>a.startedAt&&!a.endedAt);
+  const upcoming=mine.filter(a=>a.status==='approved'&&a.date>=todayKey&&!a.endedAt).sort((a,b)=>a.date.localeCompare(b.date)||(t2m(a.startTime)-t2m(b.startTime)));
+  const next=upcoming[0];
+  let h=`<div class="section-hd"><div class="page-title">Moje akcje</div></div>`;
+  if(active){h+=`<div id="ti-inject">${buildTimerCard(active.id)}</div>`;setTimeout(()=>startTimerUI(active.id),80);}
+  if(!active&&next){const isNextToday=next.date===todayKey;const mU=isNextToday?t2m(next.startTime)-t2m(nowStr()):-1;const cs=isNextToday&&mU<=30;const loc=getL(next.locationId);
+    h+=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent)"><div class="card-title">Najblizsa akcja</div><div style="font-size:13px;font-weight:700;margin:8px 0 4px">${loc?.shopType||'?'} — ${loc?.address||'?'}</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">${next.date} &nbsp; ${next.startTime}–${next.endTime}</div>${cs?`<button class="btn btn-green btn-sm" onclick="startAction('${next.id}')">▶ Rozpocznij akcje</button>`:`<div style="font-size:12px;color:var(--muted)">Start o ${next.startTime}</div>`}</div>`;}
+  h+=`<div class="card"><div class="card-title">Nadchodzace (${upcoming.length})</div>`;
+  if(!upcoming.length)h+=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Brak zaplanowanych akcji</div>`;
+  upcoming.forEach(a=>{const l=getL(a.locationId);const isNextToday=a.date===todayKey;const mU=isNextToday?t2m(a.startTime)-t2m(nowStr()):-1;const cs=isNextToday&&mU<=30;
+    h+=`<div class="slot s-approved" style="margin-bottom:6px" onclick="openDetail('${a.id}')"><div class="slot-body"><div class="slot-loc">${l?.shopType} — ${l?.address?.split(',')[0]}</div><div class="slot-meta"><span class="slot-time">${a.date} ${a.startTime}–${a.endTime}</span></div></div>${cs?`<button class="btn btn-green btn-xs" onclick="event.stopPropagation();startAction('${a.id}')">Start</button>`:''}</div>`;});
+  return h+`</div>`;
+}
+
+function renderAmbSchedule(){
+  const days=getWeek(weekOff); const locked=weekOff===1&&!canEditNextWeek();
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Moj grafik</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div></div>`;
+  if(locked)h+=`<div class="locked-bar">⏳ Nastepny tydzien mozna planowac od srody.</div>`;
+  h+=`<div class="week-nav">${weekOff>0?`<button class="wk-btn" onclick="chgWk(-1)">← Poprzedni</button>`:''}<span class="wk-lbl"><span class="wk-tag${weekOff===1?' next':''}">${weekOff===0?'Biezacy tydzien':'Nastepny tydzien'}</span></span>${weekOff<1?`<button class="wk-btn" onclick="chgWk(1)">Nastepny →</button>`:''}</div><div class="cal-list">`;
+  days.forEach((day,i)=>{const mine=DB.actions.filter(a=>a.ambassadorId===CU.id&&a.date===dk(day));h+=buildCalDay(day,i,mine,false,locked);});
+  return h+`</div>`;
+}
+
+function chgWk(d){weekOff=Math.max(0,Math.min(1,weekOff+d));showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');}
+
+function renderAmbStats(){
+  const mine=DB.actions.filter(a=>a.ambassadorId===CU.id);
+  const wk=new Set(getWeek(0).map(dk)); const tw=mine.filter(a=>wk.has(a.date));
+  const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);
+  const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);
+  const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);
+  const active=mine.find(a=>a.startedAt&&!a.endedAt);
+  let h=`<div class="section-hd"><div class="page-title">Statystyki</div><div class="page-sub">Biezacy tydzien</div></div>`;
+  h+=`<div id="ti-inject">${active?buildTimerCard(active.id):''}</div>`;
+  if(active)setTimeout(()=>startTimerUI(active.id),80);
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Plan h</div><div class="stat-val">${ph.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Realiz. h</div><div class="stat-val" style="color:var(--green)">${rh.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${sales}</div></div><div class="stat-card"><div class="stat-lbl">Wyplata</div><div class="stat-val" style="color:var(--yellow);font-size:20px">${(rh*RATE_PER_HOUR).toFixed(0)} zl</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">Historia akcji</div><div class="tw"><table><thead><tr><th>Data</th><th>Lokalizacja</th><th>Czas</th><th>Status</th><th>Sprzed.</th></tr></thead><tbody>`;
+  const sorted=[...mine].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length)h+=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Brak akcji</td></tr>`;
+  sorted.slice(0,30).forEach(a=>{const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;h+=`<tr class="clickable" onclick="openDetail('${a.id}')"><td style="font-family:var(--mono)">${a.date}</td><td><div style="font-weight:600">${l?.shopType||'?'}</div><div style="font-size:10px;color:var(--muted)">${l?.address?.split(',')[0]||''}</div></td><td style="font-family:var(--mono)">${a.startTime}–${a.endTime}</td><td><span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></td><td style="color:var(--green);font-weight:700">${a.sales?.length||0}</td></tr>`;});
+  return h+`</tbody></table></div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// ADD ACTION
+// ═══════════════════════════════════════════════════════
+function openAddAction(dateKey, prefAmbId){
+  const ambId=prefAmbId||CU.id;
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}">${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Nowa akcja';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="font-size:11px;color:var(--muted);margin-top:-10px;margin-bottom:14px">📅 ${dateKey}</div>
+    <div id="ae" class="alert alert-err"></div>
+    <div id="ai" class="alert alert-info"></div>
+    ${prefAmbId?`<div class="fg"><label class="fl">Ambasador</label><div class="f-static">${fullName(getU(prefAmbId))}</div></div>`:''}
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="al" onchange="onLocChg()">${locOpts}<option value="__new__">+ Nowa lokalizacja...</option></select></div>
+    <div id="nloc-sec" style="display:none"><div style="background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px;margin-bottom:12px;border-radius:var(--r)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:10px">Nowa lokalizacja</div>
+      <div class="fg"><label class="fl">Typ</label><select class="fc" id="nlt">${SHOP_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Adres</label><input type="text" class="fc" id="nla" placeholder="ul. Przykladowa 1, Warszawa"></div>
+      <div class="fg"><label class="fl">Uwagi</label><input type="text" class="fc" id="nln" placeholder="opcjonalne"></div>
+    </div></div>
+    <div class="fg"><label class="fl">Numer akcji</label><select class="fc" id="an"><option value="1">Akcja 1</option><option value="2">Akcja 2</option></select></div>
+    <div class="fr"><div class="fg"><label class="fl">Godzina od</label><input type="time" class="fc" id="as" value="09:00"></div><div class="fg"><label class="fl">Godzina do</label><input type="time" class="fc" id="ae2" value="13:00"></div></div>
+    <div class="fhint" style="margin-top:-8px;margin-bottom:12px">Min. 1h — maks. 4h na jedna akcje</div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitAddAction('${dateKey}','${ambId}')">Dodaj akcje</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+function onLocChg(){const v=document.getElementById('al')?.value;const s=document.getElementById('nloc-sec');if(s)s.style.display=v==='__new__'?'block':'none';}
+
+async function submitAddAction(dateKey, ambId){
+  const locSel=document.getElementById('al').value;
+  const numV=document.getElementById('an').value;
+  const s=document.getElementById('as').value;
+  const e=document.getElementById('ae2').value;
+  const err=document.getElementById('ae'); const inf=document.getElementById('ai');
+  err.className='alert alert-err'; inf.className='alert alert-info';
+  const h=diffH(s,e);
+  if(h<1||h>4){err.innerHTML=`Akcja musi trwac min. 1h i maks. 4h (${h.toFixed(1)}h)`;err.className='alert alert-err show';return;}
+  if(t2m(e)<=t2m(s)){err.innerHTML='Godzina zakonczenia musi byc po starcie';err.className='alert alert-err show';return;}
+  let locId=locSel;
+  if(locSel==='__new__'){const addr=document.getElementById('nla')?.value.trim();const type=document.getElementById('nlt')?.value;const note=document.getElementById('nln')?.value.trim();if(!addr){err.innerHTML='Podaj adres lokalizacji';err.className='alert alert-err show';return;}locId=uid();const newLoc={id:locId,address:addr,shopType:type,note};DB.locations.push(newLoc);await saveLocation(newLoc);}
+  const conflict=DB.actions.find(a=>a.date===dateKey&&a.locationId===locId&&!(t2m(e)<=t2m(a.startTime)||t2m(s)>=t2m(a.endTime)));
+  if(conflict){const u2=getU(conflict.ambassadorId);inf.innerHTML=`Uwaga: ${fullName(u2)} pracuje na tym punkcie w ${conflict.startTime}–${conflict.endTime}`;inf.className='alert alert-info show';}
+  const existing=DB.actions.filter(a=>a.ambassadorId===ambId&&a.date===dateKey);
+  if(existing.length>=2){err.innerHTML='Maks. 2 akcje dziennie';err.className='alert alert-err show';return;}
+  const newAction={id:uid(),ambassadorId:ambId,locationId:locId,date:dateKey,startTime:s,endTime:e,status:'pending',sales:[],actionNum:parseInt(numV),startedAt:null,endedAt:null,endReason:null};
+  DB.actions.push(newAction);
+  await saveAction(newAction);
+  closeModal(); toast('Akcja dodana — czeka na zatwierdzenie','tok');
+  showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');
+}
+
+// ═══════════════════════════════════════════════════════
+// ACTION DETAIL
+// ═══════════════════════════════════════════════════════
 function openDetail(actionId){
   const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
-  const l=getL(a.locationId);const u=getU(a.ambassadorId);
-  const active=a.startedAt&&!a.endedAt;
-  const isC=CU.role==='coordinator';
-  document.getElementById('modal-ttl').textContent='Szczegóły akcji';
+  const l=getL(a.locationId),u=getU(a.ambassadorId),active=a.startedAt&&!a.endedAt;
+  const isC=CU.role==='coordinator',isMine=a.ambassadorId===CU.id;
+  const todayKey=dk(new Date());
+  const minsUntil=a.date===todayKey?t2m(a.startTime)-t2m(nowStr()):-1;
+  const canStart=isMine&&a.status==='approved'&&a.date===todayKey&&!a.startedAt&&minsUntil<=30;
+  const salesHtml=(a.sales||[]).map(sv=>{const m=getM(sv.mechanismId);return`<div class="sale-item">${sv.receiptData?`<img src="${sv.receiptData}" class="sale-receipt" alt="paragon">`:`<div class="sale-no-img">🧾</div>`}<div><div class="sale-mech">${m?.name||'?'}</div><div class="sale-meta"><span class="reg-tag ${sv.registered?'reg-yes':'reg-no'}">${sv.registered?'✓ Zarejestrowany':'Niezarejestrowany'}</span></div></div></div>`;}).join('');
+  document.getElementById('modal-ttl').textContent='Szczegoly akcji';
   document.getElementById('modal-body').innerHTML=`
+    ${isC?`<div class="qa-row">${a.status!=='approved'?`<button class="btn btn-green btn-sm" onclick="setActionStatus('${a.id}','approved')">✓ Zatwierdz</button>`:''} ${a.status!=='rejected'?`<button class="btn btn-red btn-sm" onclick="setActionStatus('${a.id}','rejected')">✕ Odrzuc</button>`:''} <button class="btn btn-ghost btn-sm" onclick="openEditAction('${a.id}')">✎ Edytuj</button> <button class="btn btn-ghost btn-sm" onclick="confirmDeleteAction('${a.id}')">🗑 Usun</button></div>`:''}
     <div class="dbox">
       <div class="drow"><span class="dk2">Lokalizacja</span><span class="dv">${l?.shopType||'?'}</span></div>
       <div class="drow"><span class="dk2">Adres</span><span class="dv" style="font-size:11px">${l?.address||'?'}</span></div>
-      <div class="drow"><span class="dk2">Data</span><span class="dv">${a.date}</span></div>
-      <div class="drow"><span class="dk2">Godziny</span><span class="dv">${a.startTime} – ${a.endTime}</span></div>
-      <div class="drow"><span class="dk2">Ambasador</span><span class="dv">${fullName(u)}</span></div>
+      ${l?.note?`<div class="drow"><span class="dk2">Uwagi</span><span class="dv" style="font-size:11px;color:var(--muted)">${l.note}</span></div>`:''}
+      <div class="drow"><span class="dk2">Data</span><span class="dv" style="font-family:var(--mono)">${a.date}</span></div>
+      <div class="drow"><span class="dk2">Godziny</span><span class="dv" style="font-family:var(--mono)">${a.startTime} – ${a.endTime}</span></div>
+      <div class="drow"><span class="dk2">Ambasador</span><span class="dv" style="color:${u?.color||'inherit'}">${fullName(u)}</span></div>
       <div class="drow"><span class="dk2">Status</span><span class="badge ${bdcls(a.status,active)}">${slbl(a.status,active)}</span></div>
+      <div class="drow"><span class="dk2">Sprzedaze</span><span class="dv" style="color:var(--green)">${(a.sales||[]).length}</span></div>
+      ${a.endReason?`<div class="drow"><span class="dk2">Powod zakonczenia</span><span class="dv" style="font-size:11px">${a.endReason}</span></div>`:''}
     </div>
+    ${salesHtml?`<div style="margin-bottom:14px"><div class="card-title" style="margin-bottom:8px">Sprzedaze</div>${salesHtml}</div>`:''}
+    ${canStart?`<button class="btn btn-green btn-block" style="margin-bottom:8px" onclick="startAction('${a.id}')">▶ Rozpocznij akcje</button>`:''}
+    ${isMine&&active?`<button class="btn btn-red btn-block" style="margin-bottom:8px" onclick="openEndActionModal('${a.id}')">■ Zakoncz akcje</button>`:''}
+    ${isMine&&active?`<button class="btn btn-primary btn-block" style="margin-bottom:8px" onclick="closeModal();showPanel('amb-actions')">+ Dodaj sprzedaz</button>`:''}
+    ${!isC&&a.status==='pending'?`<button class="btn btn-ghost btn-block" style="margin-bottom:8px" onclick="confirmDeleteAction('${a.id}')">🗑 Usun akcje</button>`:''}
     <button class="btn btn-ghost btn-block" onclick="closeModal()">Zamknij</button>`;
   openModal();
 }
 
-function openAddSaleModal(actionId){
-  saleRegVal=true;salePhotoData=null;
-  const mechs=DB.mechanisms.filter(m=>m.active);
-  document.getElementById('modal-ttl').textContent='Dodaj sprzedaż';
+async function setActionStatus(id, st){
+  const a=DB.actions.find(x=>x.id===id);
+  if(a){a.status=st; await saveAction(a);}
+  closeModal(); toast(st==='approved'?'Akcja zatwierdzona ✓':'Akcja odrzucona',st==='approved'?'tgreen':'terr');
+  showPanel('coord-approvals');
+}
+
+async function confirmDeleteAction(id){
+  if(!confirm('Usunac ta akcje?'))return;
+  await delAction(id);
+  closeModal(); toast('Usunieto','twarn');
+  showPanel(CU.role==='coordinator'?'coord-schedule':'amb-schedule');
+}
+
+async function startAction(id){
+  const a=DB.actions.find(x=>x.id===id);if(!a)return;
+  a.startedAt=Date.now();
+  await saveAction(a);
+  closeModal(); toast('Akcja rozpoczeta ▶','tgreen');
+  showPanel('amb-actions');
+}
+
+// ═══════════════════════════════════════════════════════
+// END ACTION
+// ═══════════════════════════════════════════════════════
+function openEndActionModal(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  const nw=nowStr(); const earlyEnd=t2m(nw)<t2m(a.endTime);
+  document.getElementById('modal-ttl').textContent='Zakoncz akcje';
   document.getElementById('modal-body').innerHTML=`
-    <div id="sale-err" class="alert alert-err"></div>
-    <div class="fg"><label class="fl">Mechanizm</label><select class="fc" id="sale-mech"><option value="">Wybierz...</option>${mechs.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>
-    <div class="fg"><label class="fl">Zdjęcie paragonu</label><div class="photo-area" id="photo-area"><input type="file" id="receipt-inp" accept="image/*" capture="environment" onchange="handlePhoto(event)">📸 Dotknij, aby dodać zdjęcie<img id="photo-preview" alt=""></div></div>
-    <div class="btn-row"><button class="btn btn-green btn-block" onclick="submitSale('${actionId}')">Zapisz sprzedaż</button></div>`;
+    <div style="background:var(--yellow-l);border:1px solid #3a2a07;border-left:3px solid var(--yellow);padding:9px 12px;font-size:12px;margin-bottom:14px;border-radius:var(--r)">Planowe zakonczenie: <strong>${a.endTime}</strong>${earlyEnd?` — <strong style="color:var(--yellow)">Kończysz wczesniej</strong>`:''}</div>
+    ${earlyEnd?`<div class="fg"><label class="fl">Powod wczesniejszego zakonczenia *</label><select class="fc" id="end-reason-sel"><option value="">Wybierz powod...</option><option>Osiagnieto cel sprzedazowy</option><option>Brak klientow</option><option>Problem z punktem sprzedazy</option><option>Choroba / zle samopoczucie</option><option>Decyzja koordynatora</option><option>Inne</option></select></div><div class="fg" id="end-other-wrap" style="display:none"><label class="fl">Opisz powod</label><input type="text" class="fc" id="end-reason-txt" placeholder="Wpisz powod..."></div>`:`<div class="fg"><label class="fl">Notatka (opcjonalna)</label><input type="text" class="fc" id="end-note" placeholder="np. plan zrealizowany"></div>`}
+    <div class="btn-row"><button class="btn btn-red" style="flex:1" onclick="submitEndAction('${actionId}',${earlyEnd})">■ Tak, zakoncz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  document.getElementById('end-reason-sel')?.addEventListener('change',function(){const w=document.getElementById('end-other-wrap');if(w)w.style.display=this.value==='Inne'?'block':'none';});
   openModal();
 }
 
-function handlePhoto(e){
-  const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    salePhotoData=ev.target.result;
-    const prev=document.getElementById('photo-preview');
-    if(prev){prev.src=salePhotoData;prev.style.display='block';}
-  };
-  r.readAsDataURL(f);
+async function submitEndAction(actionId, earlyEnd){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  let reason='';
+  if(earlyEnd){const sel=document.getElementById('end-reason-sel');if(!sel?.value){toast('Wybierz powod zakonczenia','terr');return;}reason=sel.value==='Inne'?(document.getElementById('end-reason-txt')?.value||'Inne'):sel.value;}
+  else{reason=document.getElementById('end-note')?.value||'';}
+  a.endedAt=Date.now(); a.endReason=reason;
+  await saveAction(a);
+  if(timerInt){clearInterval(timerInt);timerInt=null;}
+  closeModal(); toast('Akcja zakonczona ■','twarn');
+  showPanel('amb-stats');
 }
 
-function submitSale(actionId){
+// ═══════════════════════════════════════════════════════
+// SALE MODAL
+// ═══════════════════════════════════════════════════════
+function openAddSaleModal(actionId){
+  saleRegVal=true; salePhotoData=null;
+  const mechs=DB.mechanisms.filter(m=>m.active);
+  if(!mechs.length){toast('Brak aktywnych mechanizmow','terr');return;}
+  document.getElementById('modal-ttl').textContent='Dodaj sprzedaz';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="sale-err" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Czy udala sie sprzedaz?</label><div class="toggle-row"><div class="tog-opt sel" id="tog-yes" onclick="selSaleResult(true)">✓ Tak, udala sie</div><div class="tog-opt" id="tog-no" onclick="selSaleResult(false)">✕ Nie udala sie</div></div></div>
+    <div id="sale-details">
+      <div class="fg"><label class="fl">Mechanizm sprzedazy</label><select class="fc" id="sale-mech"><option value="">Wybierz mechanizm...</option>${mechs.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Klient zarejestrowany?</label><div class="toggle-row"><div class="tog-opt sel" id="tog-reg-yes" onclick="selReg(true)">Tak</div><div class="tog-opt" id="tog-reg-no" onclick="selReg(false)">Nie</div></div></div>
+      <div class="fg"><label class="fl">Zdjecie paragonu</label>
+        <div class="photo-area" id="photo-area"><input type="file" id="receipt-inp" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+          <div id="photo-ph" style="pointer-events:none"><div style="font-size:12px;font-weight:600;color:var(--text2)">📷 Zrob zdjecie lub wybierz z galerii</div><div style="font-size:10px;color:var(--muted);margin-top:4px">Dotknij aby dodac</div></div>
+          <img id="photo-preview" alt=""></div>
+        <div class="fhint">Wymagane do zatwierdzenia sprzedazy</div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-green" style="flex:1" onclick="submitSale('${actionId}')">Zapisz sprzedaz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+function selSaleResult(v){saleRegVal=v;document.getElementById('tog-yes').className='tog-opt'+(v?' sel':'');document.getElementById('tog-no').className='tog-opt'+(!v?' sel':'');document.getElementById('sale-details').style.display=v?'block':'none';}
+function selReg(v){document.getElementById('tog-reg-yes').className='tog-opt'+(v?' sel':'');document.getElementById('tog-reg-no').className='tog-opt'+(!v?' sel':'');saleRegVal=v;}
+function handlePhoto(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{salePhotoData=ev.target.result;const prev=document.getElementById('photo-preview');const ph=document.getElementById('photo-ph');if(prev){prev.src=salePhotoData;prev.style.display='block';}if(ph)ph.style.display='none';};r.readAsDataURL(f);}
+
+async function submitSale(actionId){
   const mechId=document.getElementById('sale-mech')?.value;
-  if(!mechId || !salePhotoData){ toast('Wypełnij wszystkie pola','terr'); return; }
-  const a=DB.actions.find(x=>x.id===actionId); if(!a)return;
+  const err=document.getElementById('sale-err');err.className='alert alert-err';
+  const sold=document.getElementById('tog-yes')?.classList.contains('sel');
+  if(sold&&!mechId){err.innerHTML='Wybierz mechanizm sprzedazy';err.className='alert alert-err show';return;}
+  if(sold&&!salePhotoData){err.innerHTML='Dodaj zdjecie paragonu';err.className='alert alert-err show';return;}
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
   if(!a.sales)a.sales=[];
-  a.sales.push({id:uid(),mechanismId:mechId,receiptData:salePhotoData,ts:Date.now()});
-  save(); closeModal(); toast(`Zapisano. Razem: ${a.sales.length}`,'tgreen');
+  a.sales.push({id:uid(),mechanismId:mechId||null,registered:saleRegVal,receiptData:salePhotoData,sold,ts:Date.now()});
+  await saveAction(a);
+  closeModal(); toast(`Sprzedaz zapisana ✓ Lacznie: ${a.sales.length}`,'tgreen');
+  showPanel('amb-actions');
 }
 
+// ═══════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════
+function buildTimerCard(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);const l=getL(a?.locationId);const sc=(a.sales||[]).length;
+  return`<div class="timer-card"><div class="tc-lbl"><span class="tc-dot"></span>AKCJA W TOKU</div><div class="tc-loc">${l?.shopType} — ${l?.address?.split(',')[0]} &nbsp; ${a.startTime}–${a.endTime}</div><div class="tc-timer" id="tc-disp-${actionId}">00:00:00</div><div class="tc-sc-row"><span class="tc-sc-lbl">Sprzedaze:</span><span class="tc-sc-val" id="tc-sales-${actionId}">${sc}</span></div><button class="tc-add-sale" onclick="openAddSaleModal('${actionId}')">+ Dodaj sprzedaz</button><button class="tc-end" onclick="openEndActionModal('${actionId}')">■ Zakoncz akcje</button></div>`;
+}
+function checkTimer(){if(CU?.role!=='ambassador')return;const active=DB.actions.find(a=>a.ambassadorId===CU.id&&a.startedAt&&!a.endedAt);if(!active)return;const tc=document.getElementById('ti-inject');if(!tc)return;tc.innerHTML=buildTimerCard(active.id);startTimerUI(active.id);}
+function startTimerUI(id){if(timerInt)clearInterval(timerInt);timerInt=setInterval(()=>{const a=DB.actions.find(x=>x.id===id);if(!a||!a.startedAt)return clearInterval(timerInt);const el=document.getElementById('tc-disp-'+id);if(el)el.textContent=fmtSec(Math.floor((Date.now()-a.startedAt)/1000));const sc=document.getElementById('tc-sales-'+id);if(sc)sc.textContent=(a.sales||[]).length;},1000);}
+
+// ═══════════════════════════════════════════════════════
+// COORD PANELS
+// ═══════════════════════════════════════════════════════
 function renderCoordDashboard(){
+  const myAmbs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id&&u.status==='active');
   const pending=DB.actions.filter(a=>a.status==='pending');
   const activeNow=DB.actions.filter(a=>a.startedAt&&!a.endedAt);
-  let h=`<div class="section-hd"><div class="page-title">Dashboard Koordynatora</div></div>`;
-  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Na żywo</div><div class="stat-val">${activeNow.length}</div></div><div class="stat-card"><div class="stat-lbl">Oczekujące</div><div class="stat-val" style="color:var(--yellow)">${pending.length}</div></div></div>`;
+  const todayActions=DB.actions.filter(a=>a.date===dk(new Date()));
+  const pendingAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id);
+  let h=`<div class="section-hd"><div class="page-title">Dashboard 🏠</div><div class="page-sub">Witaj, ${CU.firstName}</div></div>`;
+  if(pendingAcc.length){h+=`<div class="next-card" style="cursor:pointer" onclick="showPanel('coord-accounts')"><div style="font-size:12px;font-weight:700">🔔 ${pendingAcc.length} konto${pendingAcc.length>1?'a':''} oczekuje na zatwierdzenie</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Kliknij aby przejrzec →</div></div>`;}
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Ambasadorzy</div><div class="stat-val">${myAmbs.length}</div></div><div class="stat-card"><div class="stat-lbl">Akcje dzis</div><div class="stat-val">${todayActions.length}</div></div><div class="stat-card"><div class="stat-lbl">Na zywo</div><div class="stat-val" style="color:var(--green)">${activeNow.length}</div></div><div class="stat-card"><div class="stat-lbl">Do zatwierdzenia</div><div class="stat-val" style="color:var(--yellow)">${pending.length}</div></div></div>`;
+  if(activeNow.length){
+    h+=`<div class="card" style="margin-bottom:12px"><div class="card-title">🟢 Aktywne teraz (${activeNow.length})</div>`;
+    activeNow.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const elapsed=Math.floor((Date.now()-a.startedAt)/1000);h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><div class="av" style="background:${u?.color||'#4f8ef7'}22;color:${u?.color||'#4f8ef7'};border-color:${u?.color||'#4f8ef7'}44">${ini(u)}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${fullName(u)}</div><div style="font-size:11px;color:var(--muted)">${l?.shopType} — ${l?.address?.split(',')[0]} — ${a.startTime}–${a.endTime}</div></div><div style="text-align:right"><div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent)">${fmtSec(elapsed)}</div><div style="font-size:10px;color:var(--green)">${(a.sales||[]).length} sprzedazy</div></div></div>`;});
+    h+=`</div>`;
+  }
+  if(pending.length){
+    h+=`<div class="card"><div class="card-hd"><div class="card-title">⏳ Oczekuje (${pending.length})</div><button class="btn btn-ghost btn-sm" onclick="showPanel('coord-approvals')">Wszystkie →</button></div>`;
+    pending.slice(0,5).forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);h+=`<div class="ap-row"><div class="ap-top"><div><div class="ap-title">${l?.shopType||'?'} — ${l?.address?.split(',')[0]||'?'}</div><div class="ap-sub" style="color:${u?.color}">${fullName(u)} — ${a.date} ${a.startTime}–${a.endTime}</div></div><div class="ap-btns"><button class="btn btn-green btn-xs" onclick="setActionStatus('${a.id}','approved')">✓</button><button class="btn btn-red btn-xs" onclick="setActionStatus('${a.id}','rejected')">✕</button></div></div></div>`;});
+    h+=`</div>`;
+  }
   return h;
 }
 
-function openModal(){document.getElementById('modal-ov').classList.add('open');document.body.style.overflow='hidden';}
-function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
-function closeModalBg(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+function renderCoordSchedule(){
+  const days=getWeek(weekOff); const fv=document.getElementById('cs-filter')?.value||'';
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Grafik zespolu</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div><select class="fc" id="cs-filter" onchange="showPanel('coord-schedule')" style="width:170px">${'<option value="">Wszyscy ambasadorzy</option>'+DB.users.filter(u=>u.role==='ambassador'&&u.status==='active').map(u=>`<option value="${u.id}" ${u.id===fv?'selected':''}>${fullName(u)}</option>`).join('')}</select></div>`;
+  h+=`<div class="week-nav">${weekOff>0?`<button class="wk-btn" onclick="chgWk(-1)">← Poprzedni</button>`:''}<span class="wk-lbl"><span class="wk-tag${weekOff===1?' next':''}">${weekOff===0?'Biezacy tydzien':'Nastepny tydzien'}</span></span>${weekOff<1?`<button class="wk-btn" onclick="chgWk(1)">Nastepny →</button>`:''}</div><div class="cal-list">`;
+  days.forEach((day,i)=>{let da=DB.actions.filter(a=>a.date===dk(day));if(fv)da=da.filter(a=>a.ambassadorId===fv);h+=buildCalDay(day,i,da,true,false);});
+  return h+`</div>`;
+}
+
+function openCoordAddAction(dk2){
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}">${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Dodaj akcje — '+dk2;
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ae" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Ambasador</label><select class="fc" id="camb">${DB.users.filter(u=>u.role==='ambassador'&&u.status==='active').map(u=>`<option value="${u.id}">${fullName(u)}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="al" onchange="onLocChg()">${locOpts}<option value="__new__">+ Nowa lokalizacja...</option></select></div>
+    <div id="nloc-sec" style="display:none"><div style="background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px;margin-bottom:12px;border-radius:var(--r)">
+      <div class="fg"><label class="fl">Typ</label><select class="fc" id="nlt">${SHOP_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Adres</label><input type="text" class="fc" id="nla" placeholder="ul. Przykladowa 1, Warszawa"></div>
+      <div class="fg"><label class="fl">Uwagi</label><input type="text" class="fc" id="nln" placeholder="opcjonalne"></div>
+    </div></div>
+    <div class="fg"><label class="fl">Nr akcji</label><select class="fc" id="an"><option value="1">Akcja 1</option><option value="2">Akcja 2</option></select></div>
+    <div class="fr"><div class="fg"><label class="fl">Od</label><input type="time" class="fc" id="as" value="09:00"></div><div class="fg"><label class="fl">Do</label><input type="time" class="fc" id="ae2" value="13:00"></div></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="ast"><option value="approved">Zatwierdzona</option><option value="pending">Oczekuje</option></select></div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitCoordAddAction('${dk2}')">Dodaj</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+async function submitCoordAddAction(dk2){
+  const ambId=document.getElementById('camb').value; const locSel=document.getElementById('al').value;
+  const numV=document.getElementById('an').value; const s=document.getElementById('as').value;
+  const e=document.getElementById('ae2').value; const st=document.getElementById('ast').value;
+  const err=document.getElementById('ae'); err.className='alert alert-err';
+  const h=diffH(s,e); if(h<1||h>4){err.innerHTML='Min. 1h, maks. 4h';err.className='alert alert-err show';return;}
+  let locId=locSel;
+  if(locSel==='__new__'){const addr=document.getElementById('nla')?.value.trim();const type=document.getElementById('nlt')?.value;const note=document.getElementById('nln')?.value.trim();if(!addr){err.innerHTML='Podaj adres';err.className='alert alert-err show';return;}locId=uid();const newLoc={id:locId,address:addr,shopType:type,note};DB.locations.push(newLoc);await saveLocation(newLoc);}
+  if(DB.actions.filter(a=>a.ambassadorId===ambId&&a.date===dk2).length>=2){err.innerHTML='Maks. 2 akcje dziennie';err.className='alert alert-err show';return;}
+  const newAction={id:uid(),ambassadorId:ambId,locationId:locId,date:dk2,startTime:s,endTime:e,status:st,sales:[],actionNum:parseInt(numV),startedAt:null,endedAt:null,endReason:null};
+  DB.actions.push(newAction); await saveAction(newAction);
+  closeModal(); toast('Dodano ✓','tgreen'); showPanel('coord-schedule');
+}
+
+function openEditAction(actionId){
+  const a=DB.actions.find(x=>x.id===actionId);if(!a)return;
+  const locOpts=DB.locations.map(l=>`<option value="${l.id}" ${l.id===a.locationId?'selected':''}>${l.shopType} — ${l.address}</option>`).join('');
+  document.getElementById('modal-ttl').textContent='Edytuj akcje';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ee-err" class="alert alert-err"></div>
+    <div class="fg"><label class="fl">Lokalizacja</label><select class="fc" id="el">${locOpts}</select></div>
+    <div class="fr"><div class="fg"><label class="fl">Od</label><input type="time" class="fc" id="es" value="${a.startTime}"></div><div class="fg"><label class="fl">Do</label><input type="time" class="fc" id="ee2" value="${a.endTime}"></div></div>
+    <div class="fg"><label class="fl">Status</label><select class="fc" id="est"><option value="pending" ${a.status==='pending'?'selected':''}>Oczekuje</option><option value="approved" ${a.status==='approved'?'selected':''}>Zatwierdzona</option><option value="rejected" ${a.status==='rejected'?'selected':''}>Odrzucona</option></select></div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitEditAction('${actionId}')">Zapisz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+async function submitEditAction(id){
+  const a=DB.actions.find(x=>x.id===id);
+  const s=document.getElementById('es').value,e=document.getElementById('ee2').value;
+  const err=document.getElementById('ee-err');
+  if(diffH(s,e)<1||diffH(s,e)>4){err.innerHTML='Min. 1h, maks. 4h';err.className='alert alert-err show';return;}
+  a.locationId=document.getElementById('el').value;a.startTime=s;a.endTime=e;a.status=document.getElementById('est').value;
+  await saveAction(a); closeModal(); toast('Zaktualizowano ✓','tgreen'); showPanel('coord-schedule');
+}
+
+function renderCoordApprovals(){
+  const pending=DB.actions.filter(a=>a.status==='pending');
+  const recent=DB.actions.filter(a=>a.status!=='pending').slice(-30).reverse();
+  let h=`<div class="section-hd"><div class="page-title">Zatwierdzenia</div><div class="page-sub">${pending.length} oczekujacych</div></div>`;
+  if(!pending.length){h+=`<div class="card" style="text-align:center;padding:32px;color:var(--muted)">✓ Brak oczekujacych akcji</div>`;}
+  else{
+    h+=`<div class="card" style="margin-bottom:12px"><div class="card-title">Oczekujace (${pending.length})</div>`;
+    pending.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);h+=`<div class="ap-row"><div class="ap-top"><div><div class="ap-title">${l?.shopType||'?'} — ${l?.address?.split(',')[0]||'?'}</div><div class="ap-sub"><span style="color:${u?.color}">${fullName(u)}</span> — ${a.date} ${a.startTime}–${a.endTime}</div></div><div class="ap-btns"><button class="btn btn-green btn-sm" onclick="setActionStatus('${a.id}','approved')">✓ Zatwierdz</button><button class="btn btn-red btn-sm" onclick="setActionStatus('${a.id}','rejected')">✕ Odrzuc</button><button class="btn btn-ghost btn-sm" onclick="openDetail('${a.id}')">Szczegoly</button></div></div></div>`;});
+    h+=`</div>`;
+  }
+  h+=`<div class="card"><div class="card-title">Ostatnie decyzje</div><div class="tw"><table><thead><tr><th>Ambasador</th><th>Data</th><th>Lokalizacja</th><th>Status</th><th>Sprzed.</th></tr></thead><tbody>`;
+  recent.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const act=a.startedAt&&!a.endedAt;h+=`<tr class="clickable" onclick="openDetail('${a.id}')"><td style="font-weight:700;color:${u?.color}">${fullName(u)}</td><td style="font-family:var(--mono)">${a.date}</td><td>${l?.shopType||'?'}</td><td><span class="badge ${bdcls(a.status,act)}">${slbl(a.status,act)}</span></td><td style="color:var(--green);font-weight:700">${a.sales?.length||0}</td></tr>`;});
+  return h+`</tbody></table></div></div>`;
+}
 
 function renderCoordAccounts(){
   const pendingAcc=DB.pendingAccounts.filter(p=>p.svId===CU.id);
   const activeAmbs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id);
-  let h=`<div class="section-hd"><div class="page-title">Zarządzanie Kontami</div></div>`;
-  pendingAcc.forEach(p=>{
-    h+=`<div class="acc-row"><div class="acc-name">${p.firstName} ${p.lastName}</div><div class="acc-btns"><button class="btn btn-green btn-sm" onclick="approveAccount('${p.id}')">Zatwierdź</button></div></div>`;
-  });
+  let h=`<div class="section-hd"><div class="page-title">Konta</div><div class="page-sub">${pendingAcc.length} oczekuje na zatwierdzenie</div></div>`;
+  if(pendingAcc.length){
+    h+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Prosba o dolaczenie</div>`;
+    pendingAcc.forEach(p=>{const sv=getU(p.svId);h+=`<div class="acc-row"><div style="display:flex;align-items:center;gap:12px"><div class="av" style="background:#4f8ef722;color:#4f8ef7;border-color:#4f8ef744;width:36px;height:36px;font-size:11px">${(p.firstName[0]+p.lastName[0]).toUpperCase()}</div><div style="flex:1"><div class="acc-name">${p.firstName} ${p.lastName}</div><div class="acc-meta">${p.email}</div><div class="acc-meta">Koordynator: ${fullName(sv)} — ${new Date(p.createdAt).toLocaleDateString('pl-PL')}</div></div></div><div class="acc-btns"><button class="btn btn-green btn-sm" onclick="approveAccount('${p.id}')">✓ Zatwierdz</button><button class="btn btn-red btn-sm" onclick="rejectAccount('${p.id}')">✕ Odrzuc</button></div></div>`;});
+  } else {h+=`<div class="card" style="text-align:center;padding:20px;color:var(--muted);margin-bottom:14px">Brak oczekujacych kont</div>`;}
+  h+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:18px 0 10px">Ambasadorzy (${activeAmbs.length})</div>`;
+  activeAmbs.forEach(u=>{const myA=DB.actions.filter(a=>a.ambassadorId===u.id);h+=`<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:12px"><div class="av" style="background:${u.color}22;color:${u.color};border-color:${u.color}44;width:36px;height:36px;flex-shrink:0;font-size:11px">${(u.firstName[0]+u.lastName[0]).toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${fullName(u)}</div><div style="font-size:11px;color:var(--muted)">${u.email}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Akcje: ${myA.length} — Sprzedaze: ${myA.reduce((s,a)=>s+(a.sales?.length||0),0)}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="badge ${u.status==='active'?'bda':'bdr'}">${u.status==='active'?'Aktywny':'Zablokowany'}</span><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="toggleBlockUser('${u.id}')">${u.status==='active'?'Zablokuj':'Odblokuj'}</button><button class="btn btn-red btn-xs" onclick="confirmDeleteUser('${u.id}')">Usun</button></div></div></div></div>`;});
   return h;
 }
 
-function approveAccount(pendingId){
-  const p=DB.pendingAccounts.find(x=>x.id===pendingId);
-  if(!p)return;
-  DB.users.push({...p,id:'U'+Date.now(),status:'active'});
-  DB.pendingAccounts=DB.pendingAccounts.filter(x=>x.id!==pendingId);
-  save(); buildNav(); toast('Konto zatwierdzone','tgreen'); showPanel('coord-accounts');
+async function approveAccount(pendingId){
+  const p=DB.pendingAccounts.find(x=>x.id===pendingId);if(!p)return;
+  const newUser={...p, id:'U'+Date.now(), status:'active'};
+  DB.users.push(newUser);
+  await saveUser(newUser);
+  await delPending(pendingId);
+  buildNav(); updateNotifDot();
+  toast(`✓ Konto ${p.firstName} ${p.lastName} zatwierdzone`,'tgreen');
+  showPanel('coord-accounts');
 }
 
+async function rejectAccount(pendingId){
+  await delPending(pendingId);
+  buildNav(); updateNotifDot();
+  toast('Konto odrzucone','terr');
+  showPanel('coord-accounts');
+}
+
+async function toggleBlockUser(userId){
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  u.status=u.status==='active'?'blocked':'active';
+  await saveUser(u);
+  toast(u.status==='active'?'Odblokowano ✓':'Zablokowano ■','twarn');
+  showPanel('coord-accounts');
+}
+
+async function confirmDeleteUser(userId){
+  if(!confirm('Usunac konto tego ambasadora? Jego akcje pozostana w bazie.'))return;
+  await delUser(userId);
+  toast('Konto usuniete','twarn');
+  showPanel('coord-accounts');
+}
+
+function renderCoordTeam(){
+  const ambs=DB.users.filter(u=>u.role==='ambassador'&&u.svId===CU.id&&u.status==='active');
+  const wk=new Set(getWeek(0).map(dk));
+  let h=`<div class="section-hd"><div class="page-title">Moj zespol 👥</div><div class="page-sub">Biezacy tydzien</div></div>`;
+  ambs.forEach(u=>{const tw=DB.actions.filter(a=>a.ambassadorId===u.id&&wk.has(a.date));const ph=tw.reduce((s,a)=>s+diffH(a.startTime,a.endTime),0);const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);const sales=tw.reduce((s,a)=>s+(a.sales?.length||0),0);const active=DB.actions.find(a=>a.ambassadorId===u.id&&a.startedAt&&!a.endedAt);
+    h+=`<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="av" style="background:${u.color}22;color:${u.color};border-color:${u.color}44;width:36px;height:36px;flex-shrink:0;font-size:11px">${(u.firstName[0]+u.lastName[0]).toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${fullName(u)}</div><div style="font-size:10px;color:var(--muted)">${u.email}</div></div>${active?`<span class="live-tag">LIVE</span>`:''}<button class="btn btn-ghost btn-sm" onclick="openAddAction('${dk(new Date())}','${u.id}')">+ Akcja</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:var(--mono)">${ph.toFixed(1)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Plan h</div></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green)">${rh.toFixed(1)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Real. h</div></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green)">${sales}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Sprzedaze</div></div><div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--yellow)">${(rh*RATE_PER_HOUR).toFixed(0)}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Wypl. zl</div></div></div></div>`;});
+  if(!ambs.length)h+=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)">Brak ambasadorow w zespole</div>`;
+  return h;
+}
+
+function renderCoordMechanisms(){
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Mechanizmy ⚙️</div><div class="page-sub">Dostepne dla ambasadorow</div></div><button class="btn btn-primary btn-sm" onclick="openAddMechModal()">+ Dodaj</button></div>`;
+  if(!DB.mechanisms.length){h+=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)">Brak mechanizmow</div>`;return h;}
+  h+=`<div class="card">`;
+  DB.mechanisms.forEach((m,i)=>{h+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i>0?'border-top:1px solid var(--border)':''}"><div style="flex:1"><div style="font-size:13px;font-weight:600">${m.name}</div><div style="margin-top:4px"><span class="badge ${m.active?'bda':'bdr'}">${m.active?'Aktywny':'Nieaktywny'}</span></div></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="toggleMech('${m.id}')">${m.active?'Dezaktywuj':'Aktywuj'}</button><button class="btn btn-ghost btn-xs" onclick="editMechModal('${m.id}')">Edytuj</button><button class="btn btn-ghost btn-xs" onclick="deleteMech('${m.id}')">Usun</button></div></div>`;});
+  return h+`</div>`;
+}
+
+function openAddMechModal(){document.getElementById('modal-ttl').textContent='Nowy mechanizm';document.getElementById('modal-body').innerHTML=`<div class="fg"><label class="fl">Nazwa mechanizmu</label><input type="text" class="fc" id="mn" placeholder="np. Rejestracja aplikacji"></div><div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitMech()">Dodaj</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;openModal();}
+async function submitMech(){const n=document.getElementById('mn')?.value.trim();if(!n){toast('Podaj nazwe','terr');return;}const m={id:uid(),name:n,active:true};DB.mechanisms.push(m);await saveMechanism(m);closeModal();toast('Dodano ✓','tgreen');showPanel('coord-mechanisms');}
+async function toggleMech(id){const m=DB.mechanisms.find(x=>x.id===id);if(m){m.active=!m.active;await saveMechanism(m);}showPanel('coord-mechanisms');}
+function editMechModal(id){const m=DB.mechanisms.find(x=>x.id===id);if(!m)return;document.getElementById('modal-ttl').textContent='Edytuj mechanizm';document.getElementById('modal-body').innerHTML=`<div class="fg"><label class="fl">Nazwa</label><input type="text" class="fc" id="men" value="${m.name}"></div><div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="saveEditMech('${id}')">Zapisz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;openModal();}
+async function saveEditMech(id){const m=DB.mechanisms.find(x=>x.id===id);const n=document.getElementById('men')?.value.trim();if(!n){toast('Podaj nazwe','terr');return;}if(m)m.name=n;await saveMechanism(m);closeModal();toast('Zaktualizowano ✓','tgreen');showPanel('coord-mechanisms');}
+async function deleteMech(id){if(!confirm('Usunac mechanizm?'))return;DB.mechanisms=DB.mechanisms.filter(m=>m.id!==id);await fbDelete('mechanisms',id);saveLocal();toast('Usunieto','twarn');showPanel('coord-mechanisms');}
+
+// ═══════════════════════════════════════════════════════
+// COORD USERS — panel zarządzania użytkownikami (NOWY)
+// ═══════════════════════════════════════════════════════
+function renderCoordUsers(){
+  const allAmbs = DB.users.filter(u=>u.role==='ambassador');
+  const allCoords = DB.users.filter(u=>u.role==='coordinator');
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Zarzadzanie uzytkownikami 🛡️</div><div class="page-sub">Dodawaj, edytuj i usuwaj konta</div></div><button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Dodaj uzytkownika</button></div>`;
+
+  h+=`<div class="card" style="margin-bottom:14px"><div class="card-hd"><div class="card-title">Koordynatorzy (${allCoords.length})</div></div>`;
+  allCoords.forEach(u=>{h+=buildUserRow(u);});
+  if(!allCoords.length)h+=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Brak koordynatorow</div>`;
+  h+=`</div>`;
+
+  h+=`<div class="card"><div class="card-hd"><div class="card-title">Ambasadorzy (${allAmbs.length})</div></div>`;
+  allAmbs.forEach(u=>{h+=buildUserRow(u);});
+  if(!allAmbs.length)h+=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Brak ambasadorow</div>`;
+  h+=`</div>`;
+  return h;
+}
+
+function buildUserRow(u){
+  const sv = u.svId ? getU(u.svId) : null;
+  const isSelf = u.id === CU.id;
+  return `<div class="um-user">
+    <div class="av" style="background:${u.color}22;color:${u.color};border-color:${u.color}44;width:36px;height:36px;flex-shrink:0;font-size:11px">${ini(u)}</div>
+    <div class="um-info">
+      <div class="um-name">${fullName(u)} ${isSelf?'<span style="font-size:10px;color:var(--accent)">(Ty)</span>':''}</div>
+      <div class="um-email">${u.email}${sv?` — Koord: ${fullName(sv)}`:''}</div>
+    </div>
+    <div class="um-controls">
+      <span class="role-pill ${u.role==='coordinator'?'role-coordinator':'role-ambassador'}">${u.role==='coordinator'?'Koordynator':'Ambasador'}</span>
+      <span class="badge ${u.status==='active'?'bda':'bdr'}">${u.status==='active'?'Aktywny':'Zablok.'}</span>
+      ${!isSelf?`<button class="btn btn-ghost btn-xs" onclick="openEditUserModal('${u.id}')">Edytuj</button>
+      <button class="btn btn-ghost btn-xs" onclick="toggleBlockUser('${u.id}')">${u.status==='active'?'Blok.':'Odblok.'}</button>
+      <button class="btn btn-red btn-xs" onclick="confirmDeleteUser('${u.id}')">Usun</button>`:''}
+    </div>
+  </div>`;
+}
+
+function openAddUserModal(){
+  const coords=DB.users.filter(u=>u.role==='coordinator'&&u.status==='active');
+  document.getElementById('modal-ttl').textContent='Dodaj uzytkownika';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="au-err" class="alert alert-err"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Imie</label><input type="text" class="fc" id="au-first" placeholder="Anna"></div>
+      <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="au-last" placeholder="Nowak"></div>
+    </div>
+    <div class="fg"><label class="fl">E-mail</label><input type="email" class="fc" id="au-email" placeholder="anna@email.pl"></div>
+    <div class="fg"><label class="fl">Haslo startowe</label><input type="text" class="fc" id="au-pass" placeholder="min. 6 znakow"></div>
+    <div class="fg"><label class="fl">Rola</label>
+      <select class="fc" id="au-role" onchange="toggleSvField()">
+        <option value="ambassador">Ambasador</option>
+        <option value="coordinator">Koordynator</option>
+      </select>
+    </div>
+    <div class="fg" id="au-sv-wrap">
+      <label class="fl">Przypisany koordynator</label>
+      <select class="fc" id="au-sv">
+        <option value="">Wybierz...</option>
+        ${coords.map(c=>`<option value="${c.id}">${fullName(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Kolor avatara</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+        ${['#4f8ef7','#22c55e','#f59e0b','#f05252','#a855f7','#06b6d4','#ec4899','#84cc16'].map(c=>`<div onclick="selColor('${c}')" id="col-${c.replace('#','')}" style="width:28px;height:28px;background:${c};border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .12s" title="${c}"></div>`).join('')}
+      </div>
+      <input type="hidden" id="au-color" value="#4f8ef7">
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitAddUser()">Dodaj uzytkownika</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  // mark default color
+  setTimeout(()=>{const el=document.getElementById('col-4f8ef7');if(el)el.style.borderColor='#fff';},50);
+  openModal();
+}
+
+function toggleSvField(){
+  const role=document.getElementById('au-role')?.value;
+  const wrap=document.getElementById('au-sv-wrap');
+  if(wrap)wrap.style.display=role==='ambassador'?'block':'none';
+}
+
+function selColor(c){
+  document.getElementById('au-color').value=c;
+  document.querySelectorAll('[id^="col-"]').forEach(el=>el.style.borderColor='transparent');
+  const key=c.replace('#','');
+  const el=document.getElementById('col-'+key);
+  if(el)el.style.borderColor='#fff';
+}
+
+async function submitAddUser(){
+  const first=document.getElementById('au-first').value.trim();
+  const last=document.getElementById('au-last').value.trim();
+  const email=document.getElementById('au-email').value.trim().toLowerCase();
+  const pass=document.getElementById('au-pass').value;
+  const role=document.getElementById('au-role').value;
+  const svId=document.getElementById('au-sv')?.value||null;
+  const color=document.getElementById('au-color').value||'#4f8ef7';
+  const err=document.getElementById('au-err'); err.className='alert alert-err';
+
+  if(!first||!last){err.innerHTML='Podaj imie i nazwisko';err.className='alert alert-err show';return;}
+  if(!email||!email.includes('@')){err.innerHTML='Podaj prawidlowy e-mail';err.className='alert alert-err show';return;}
+  if(pass.length<6){err.innerHTML='Haslo min. 6 znakow';err.className='alert alert-err show';return;}
+  if(role==='ambassador'&&!svId){err.innerHTML='Wybierz koordynatora dla ambasadora';err.className='alert alert-err show';return;}
+  if(DB.users.find(u=>u.email.toLowerCase()===email)){err.innerHTML='Ten e-mail jest juz zarejestrowany';err.className='alert alert-err show';return;}
+
+  const newUser={id:'U'+Date.now(), firstName:first, lastName:last, email, pass, role, svId:role==='ambassador'?svId:null, status:'active', color, createdAt:Date.now()};
+  DB.users.push(newUser);
+  await saveUser(newUser);
+  closeModal(); toast(`✓ Uzytkownik ${fullName(newUser)} dodany`,'tgreen');
+  buildNav(); showPanel('coord-users');
+}
+
+function openEditUserModal(userId){
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  const coords=DB.users.filter(x=>x.role==='coordinator'&&x.status==='active');
+  document.getElementById('modal-ttl').textContent='Edytuj uzytkownika';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="eu-err" class="alert alert-err"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Imie</label><input type="text" class="fc" id="eu-first" value="${u.firstName}"></div>
+      <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="eu-last" value="${u.lastName}"></div>
+    </div>
+    <div class="fg"><label class="fl">E-mail</label><div class="f-static">${u.email}</div><div class="fhint">E-mail nie mozna zmienic</div></div>
+    <div class="fg"><label class="fl">Rola</label>
+      <select class="fc" id="eu-role" onchange="toggleEditSvField('${userId}')">
+        <option value="ambassador" ${u.role==='ambassador'?'selected':''}>Ambasador</option>
+        <option value="coordinator" ${u.role==='coordinator'?'selected':''}>Koordynator</option>
+      </select>
+    </div>
+    <div class="fg" id="eu-sv-wrap" ${u.role!=='ambassador'?'style="display:none"':''}>
+      <label class="fl">Przypisany koordynator</label>
+      <select class="fc" id="eu-sv">
+        <option value="">Wybierz...</option>
+        ${coords.map(c=>`<option value="${c.id}" ${c.id===u.svId?'selected':''}>${fullName(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Kolor avatara</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+        ${['#4f8ef7','#22c55e','#f59e0b','#f05252','#a855f7','#06b6d4','#ec4899','#84cc16'].map(c=>`<div onclick="selColorEdit('${c}')" id="ecol-${c.replace('#','')}" style="width:28px;height:28px;background:${c};border-radius:6px;cursor:pointer;border:2px solid ${c===u.color?'#fff':'transparent'};transition:all .12s"></div>`).join('')}
+      </div>
+      <input type="hidden" id="eu-color" value="${u.color}">
+    </div>
+    <div class="fg"><label class="fl">Status</label>
+      <select class="fc" id="eu-status">
+        <option value="active" ${u.status==='active'?'selected':''}>Aktywny</option>
+        <option value="blocked" ${u.status==='blocked'?'selected':''}>Zablokowany</option>
+      </select>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitEditUser('${userId}')">Zapisz zmiany</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+function toggleEditSvField(){const role=document.getElementById('eu-role')?.value;const wrap=document.getElementById('eu-sv-wrap');if(wrap)wrap.style.display=role==='ambassador'?'block':'none';}
+function selColorEdit(c){document.getElementById('eu-color').value=c;document.querySelectorAll('[id^="ecol-"]').forEach(el=>el.style.borderColor='transparent');const el=document.getElementById('ecol-'+c.replace('#',''));if(el)el.style.borderColor='#fff';}
+
+async function submitEditUser(userId){
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  const first=document.getElementById('eu-first').value.trim();
+  const last=document.getElementById('eu-last').value.trim();
+  const role=document.getElementById('eu-role').value;
+  const svId=document.getElementById('eu-sv')?.value||null;
+  const color=document.getElementById('eu-color').value||u.color;
+  const status=document.getElementById('eu-status').value;
+  const err=document.getElementById('eu-err'); err.className='alert alert-err';
+  if(!first||!last){err.innerHTML='Podaj imie i nazwisko';err.className='alert alert-err show';return;}
+  if(role==='ambassador'&&!svId){err.innerHTML='Wybierz koordynatora';err.className='alert alert-err show';return;}
+  u.firstName=first; u.lastName=last; u.role=role;
+  u.svId=role==='ambassador'?svId:null;
+  u.color=color; u.status=status;
+  await saveUser(u);
+  closeModal(); toast('Zaktualizowano ✓','tgreen'); buildNav(); showPanel('coord-users');
+}
+
+// ═══════════════════════════════════════════════════════
+// COORD REPORT
+// ═══════════════════════════════════════════════════════
+function renderCoordReport(){
+  const ambs=DB.users.filter(u=>u.role==='ambassador'&&u.status==='active');
+  const days=getWeek(0); const wk=new Set(days.map(dk));
+  let tH=0,tS=0,tP=0;
+  const rows=ambs.map(u=>{const tw=DB.actions.filter(a=>a.ambassadorId===u.id&&wk.has(a.date));const rh=tw.filter(a=>a.endedAt).reduce((s,a)=>s+(a.endedAt-a.startedAt)/3600000,0);const s=tw.reduce((sv,a)=>sv+(a.sales?.length||0),0);const p=rh*RATE_PER_HOUR;tH+=rh;tS+=s;tP+=p;return{u,n:tw.length,rh,s,p};});
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Raport tygodniowy 📋</div><div class="page-sub">${fmtD(days[0])} – ${fmtD(days[6])}</div></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm" onclick="exportExcel()">📥 Excel</button><button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Drukuj</button></div></div>`;
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="stat-lbl">Lacznie h</div><div class="stat-val">${tH.toFixed(1)}</div></div><div class="stat-card"><div class="stat-lbl">Sprzedaze</div><div class="stat-val" style="color:var(--green)">${tS}</div></div><div class="stat-card"><div class="stat-lbl">Wyplaty</div><div class="stat-val" style="color:var(--yellow);font-size:20px">${tP.toFixed(0)} zl</div></div><div class="stat-card"><div class="stat-lbl">Ambasadorzy</div><div class="stat-val">${ambs.length}</div></div></div>`;
+  h+=`<div class="card"><div class="card-title">Podsumowanie zespolu</div><div class="tw"><table><thead><tr><th>Imie i nazwisko</th><th>Akcje</th><th>Godz.</th><th>Sprzedaze</th><th>Wyplata</th></tr></thead><tbody>`;
+  rows.forEach(({u,n,rh,s,p})=>{h+=`<tr><td style="font-weight:700;color:${u.color}">${fullName(u)}</td><td style="font-family:var(--mono)">${n}</td><td style="font-family:var(--mono)">${rh.toFixed(1)}h</td><td style="color:var(--green);font-weight:700">${s}</td><td style="color:var(--yellow);font-weight:700">${p.toFixed(2)} zl</td></tr>`;});
+  h+=`<tr style="background:var(--bg3);font-weight:700"><td>RAZEM</td><td></td><td style="font-family:var(--mono)">${tH.toFixed(1)}h</td><td style="color:var(--green)">${tS}</td><td style="color:var(--yellow)">${tP.toFixed(2)} zl</td></tr></tbody></table></div></div>`;
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════
+// EXCEL EXPORT
+// ═══════════════════════════════════════════════════════
 function exportExcel(){
+  if(typeof XLSX==='undefined'){toast('Biblioteka XLSX niedostepna','terr');return;}
   const wb=XLSX.utils.book_new();
-  const data=DB.actions.map(a=>({Data:a.date, Miejsce:getL(a.locationId)?.address, Ambasador:fullName(getU(a.ambassadorId)), Status:a.status}));
-  const ws=XLSX.utils.json_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb,ws,'Raport');
-  XLSX.writeFile(wb,'BrandTool_Export.xlsx');
+  const aR=[['ID','Ambasador','E-mail','Data','Od','Do','Lokalizacja','Typ','Status','Sprzedaze','Godz. realiz.','Powod']];
+  DB.actions.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);const rh=a.endedAt&&a.startedAt?((a.endedAt-a.startedAt)/3600000).toFixed(2):'';aR.push([a.id,fullName(u),u?.email||'',a.date,a.startTime,a.endTime,l?.address||'',l?.shopType||'',slbl(a.status,false),(a.sales||[]).length,rh,a.endReason||'']);});
+  const ws1=XLSX.utils.aoa_to_sheet(aR);XLSX.utils.book_append_sheet(wb,ws1,'Akcje');
+  const sR=[['ID','Data','Ambasador','Lokalizacja','Mechanizm','Zarejestrowany']];
+  DB.actions.forEach(a=>{const u=getU(a.ambassadorId);const l=getL(a.locationId);(a.sales||[]).forEach(s=>{const m=getM(s.mechanismId);sR.push([s.id,a.date,fullName(u),l?.address||'',m?.name||'',s.registered?'Tak':'Nie']);});});
+  const ws2=XLSX.utils.aoa_to_sheet(sR);XLSX.utils.book_append_sheet(wb,ws2,'Sprzedaze');
+  XLSX.writeFile(wb,`BrandTool_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Plik Excel pobrany ✓','tgreen');
 }
 
-/* INIT */
-(function init(){
-  const saved=loadDB();
-  if(saved){ DB=saved; }
-  save();
-})();
+// ═══════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════
+function renderNotifications(){
+  const pendingAcc=CU.role==='coordinator'?DB.pendingAccounts.filter(p=>p.svId===CU.id):[];
+  const rejected=CU.role==='ambassador'?DB.actions.filter(a=>a.ambassadorId===CU.id&&a.status==='rejected'):[];
+  let h=`<div class="section-hd"><div class="page-title">Powiadomienia 🔔</div></div>`;
+  if(!pendingAcc.length&&!rejected.length){h+=`<div class="card" style="text-align:center;padding:32px;color:var(--muted)">Brak powiadomien</div>`;return h;}
+  pendingAcc.forEach(p=>{h+=`<div class="card" style="margin-bottom:10px;border-left:3px solid var(--yellow)"><div style="font-size:12px;font-weight:700">👤 Nowy ambasador chce dolaczyc</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${p.firstName} ${p.lastName} — ${p.email}</div><div class="btn-row"><button class="btn btn-green btn-sm" onclick="approveAccount('${p.id}')">✓ Zatwierdz</button><button class="btn btn-red btn-sm" onclick="rejectAccount('${p.id}')">✕ Odrzuc</button></div></div>`;});
+  rejected.forEach(a=>{const l=getL(a.locationId);h+=`<div class="card" style="margin-bottom:10px;border-left:3px solid var(--red)"><div style="font-size:12px;font-weight:700">❌ Akcja odrzucona</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${l?.shopType} — ${a.date} ${a.startTime}–${a.endTime}</div></div>`;});
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
+function openModal(){document.getElementById('modal-ov').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
+function closeModalBg(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function initDemoData(){
+  // Konto ADMIN
+  if(!DB.users.find(u=>u.email===ADMIN_EMAIL)){
+    DB.users.unshift({id:'U1', firstName:'Admin', lastName:'Koordynator', email:ADMIN_EMAIL, pass:ADMIN_PASS, role:'coordinator', svId:null, status:'active', color:'#4f8ef7', createdAt:Date.now()-9e8});
+  }
+  // Przykładowi ambasadorzy (demo)
+  if(!DB.users.find(u=>u.email==='anna@brand.pl')){
+    DB.users.push({id:'U2',firstName:'Anna',lastName:'Nowak',email:'anna@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#22c55e',createdAt:Date.now()-7e8});
+    DB.users.push({id:'U3',firstName:'Marta',lastName:'Wisniewska',email:'marta@brand.pl',pass:'1234',role:'ambassador',svId:'U1',status:'active',color:'#f59e0b',createdAt:Date.now()-6e8});
+  }
+  // Przykładowe akcje (demo)
+  if(!DB.actions.length){
+    const today=new Date();
+    function dkN(n){const d=new Date(today);d.setDate(d.getDate()+n);return dk(d);}
+    const day=today.getDay(),m=day===0?-6:1-day;
+    [{a:'U2',l:'L1',dt:dkN(m),s:'09:00',e:'13:00',st:'approved'},{a:'U3',l:'L2',dt:dkN(m),s:'10:00',e:'14:00',st:'approved'},{a:'U2',l:'L3',dt:dkN(m+1),s:'14:00',e:'17:00',st:'pending'},{a:'U3',l:'L1',dt:dkN(m+2),s:'09:00',e:'12:00',st:'rejected'}].forEach(x=>DB.actions.push({id:uid(),ambassadorId:x.a,locationId:x.l,date:x.dt,startTime:x.s,endTime:x.e,status:x.st,sales:[],actionNum:1,startedAt:null,endedAt:null,endReason:null}));
+    saveLocal();
+  }
+}
+
+window.addEventListener('firebase-ready', async () => {
+  const FB = window._FB;
+  FIREBASE_MODE = FB.ok;
+
+  if (FIREBASE_MODE) {
+    // Firebase mode: czekaj na auth state
+    FB.onAuthStateChanged(FB.auth, async (firebaseUser) => {
+      document.getElementById('loading-screen').style.display='none';
+      if (firebaseUser) {
+        // Już zalogowany z poprzedniej sesji
+        try {
+          const snap = await FB.getDoc(FB.doc(FB.db, 'users', firebaseUser.uid));
+          if (snap.exists()) {
+            CU = {id: firebaseUser.uid, ...snap.data()};
+            if (CU.status === 'active') {
+              await loadFromFirebase();
+              document.getElementById('auth-screen').style.display='none';
+              enterApp();
+              return;
+            }
+          }
+        } catch(e){}
+      }
+      document.getElementById('auth-screen').style.display='flex';
+    });
+  } else {
+    // Demo mode: localStorage
+    document.getElementById('loading-screen').style.display='none';
+    const saved = loadLocal();
+    if (saved) {
+      DB = saved;
+    }
+    initDemoData();
+    document.getElementById('auth-screen').style.display='flex';
+  }
+});
+
+// Fallback jeśli Firebase nie załaduje się
+setTimeout(()=>{
+  if(document.getElementById('loading-screen').style.display!=='none'){
+    document.getElementById('loading-screen').style.display='none';
+    FIREBASE_MODE = false;
+    const saved=loadLocal();if(saved)DB=saved;
+    initDemoData();
+    document.getElementById('auth-screen').style.display='flex';
+  }
+},3000);
 </script>
 </body>
 </html>
-```
