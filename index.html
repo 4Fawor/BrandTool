@@ -477,7 +477,7 @@ tr.clickable{cursor:pointer;}
 const ADMIN_EMAIL  = 'admin@mojafirma.pl';  // ← zmień na swój e-mail
 const ADMIN_PASS  = 'admin123';  // ← zmień na swoje hasło (tylko tryb demo)
 const ACCESS_CODE  = 'TEAM2024';  // ← kod rejestracyjny dla ambasadorów
-const RATE_PER_HOUR = 25;  // ← stawka godzinowa w PLN
+let RATE_PER_HOUR = 25;  // ← stawka godzinowa w PLN
 
 // ═══════════════════════════════════════════════════════
 // LOCAL STORAGE FALLBACK (używany gdy Firebase nie skonfigurowany)
@@ -1449,6 +1449,109 @@ function exportExcel(){
 // ═══════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════════════
+// =====================================================
+// COORD SETTINGS
+// =====================================================
+function renderCoordSettings(){
+  const myCode = CU.accessCode || ACCESS_CODE;
+  let h=`<div class="section-hd hd-row"><div><div class="page-title">Ustawienia</div><div class="page-sub">Konfiguracja konta koordynatora</div></div></div>`;
+  h+=`<div class="card" style="margin-bottom:14px">
+    <div class="card-hd"><div class="card-title">Twoje dane</div></div>
+    <div class="dbox">
+      <div class="drow"><span class="dk2">Imie i nazwisko</span><span class="dv">${fullName(CU)}</span></div>
+      <div class="drow"><span class="dk2">E-mail</span><span class="dv" style="font-family:var(--mono);font-size:11px">${CU.email}</span></div>
+      <div class="drow"><span class="dk2">Rola</span><span class="badge role-coordinator">Koordynator</span></div>
+      <div class="drow"><span class="dk2">ID konta</span><span class="dv" style="font-family:var(--mono);font-size:10px;color:var(--muted)">${CU.id}</span></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-ghost btn-sm" onclick="openEditProfileModal()">Edytuj dane</button></div>
+  </div>`;
+  h+=`<div class="card" style="margin-bottom:14px">
+    <div class="card-hd"><div class="card-title">Kod dostepu do rejestracji</div></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Ambasadorzy podaja ten kod podczas rejestracji, aby dolaczye do Twojego zespolu.</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px">
+      <div style="flex:1;font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--accent)">${myCode}</div>
+      <button class="btn btn-ghost btn-sm" onclick="copyCode('${myCode}')">Kopiuj</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Zmien kod jesli chcesz ograniczyc nowe rejestracje.</div>
+    <div class="fg"><label class="fl">Nowy kod dostepu</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="fc" id="new-code-inp" placeholder="min. 4 znaki, np. TEAM2025" style="text-transform:uppercase;flex:1">
+        <button class="btn btn-primary" onclick="saveAccessCode()">Zapisz kod</button>
+      </div>
+    </div>
+  </div>`;
+  h+=`<div class="card">
+    <div class="card-hd"><div class="card-title">Stawka godzinowa</div></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Uzywana do obliczen wyplat w raportach.</div>
+    <div class="fg">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" class="fc" id="rate-inp" value="${RATE_PER_HOUR}" min="1" max="999" style="width:100px">
+        <span style="color:var(--text2);font-size:13px">zl / godzine</span>
+        <button class="btn btn-primary" onclick="saveRate()">Zapisz</button>
+      </div>
+    </div>
+  </div>`;
+  return h;
+}
+
+function copyCode(code){
+  navigator.clipboard?.writeText(code).then(()=>toast('Kod skopiowany')).catch(()=>{
+    const el=document.createElement('textarea');el.value=code;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);toast('Kod skopiowany');
+  });
+}
+
+async function saveAccessCode(){
+  const val=document.getElementById('new-code-inp')?.value.trim().toUpperCase();
+  if(!val||val.length<4){toast('Kod musi miec min. 4 znaki','terr');return;}
+  CU.accessCode=val;
+  const u=DB.users.find(x=>x.id===CU.id);
+  if(u){u.accessCode=val;await saveUser(u);}
+  window._DYNAMIC_CODE=val;
+  toast('Kod dostepu zapisany');
+  showPanel('coord-settings');
+}
+
+function saveRate(){
+  const val=parseInt(document.getElementById('rate-inp')?.value);
+  if(!val||val<1){toast('Podaj prawidlowa stawke','terr');return;}
+  RATE_PER_HOUR=val;
+  toast('Stawka zapisana');
+}
+
+function openEditProfileModal(){
+  document.getElementById('modal-ttl').textContent='Edytuj profil';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ep-err" class="alert alert-err"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Imie</label><input type="text" class="fc" id="ep-first" value="${CU.firstName}"></div>
+      <div class="fg"><label class="fl">Nazwisko</label><input type="text" class="fc" id="ep-last" value="${CU.lastName}"></div>
+    </div>
+    <div class="fg"><label class="fl">Kolor avatara</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        ${['#4f8ef7','#22c55e','#f59e0b','#f05252','#a855f7','#06b6d4','#ec4899','#84cc16'].map(c=>`<div onclick="selColorEdit('${c}')" id="ecol-${c.replace('#','')}" style="width:28px;height:28px;background:${c};border-radius:6px;cursor:pointer;border:2px solid ${c===CU.color?'#fff':'transparent'};transition:all .12s"></div>`).join('')}
+      </div>
+      <input type="hidden" id="eu-color" value="${CU.color}">
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="submitEditProfile()">Zapisz</button><button class="btn btn-ghost" onclick="closeModal()">Anuluj</button></div>`;
+  openModal();
+}
+
+async function submitEditProfile(){
+  const first=document.getElementById('ep-first').value.trim();
+  const last=document.getElementById('ep-last').value.trim();
+  const color=document.getElementById('eu-color').value||CU.color;
+  const err=document.getElementById('ep-err');err.className='alert alert-err';
+  if(!first||!last){err.innerHTML='Podaj imie i nazwisko';err.className='alert alert-err show';return;}
+  CU.firstName=first;CU.lastName=last;CU.color=color;
+  const u=DB.users.find(x=>x.id===CU.id);
+  if(u){u.firstName=first;u.lastName=last;u.color=color;await saveUser(u);}
+  document.getElementById('topbar-av').textContent=ini(CU);
+  document.getElementById('topbar-av').style.cssText=`background:${color}22;color:${color};border:1px solid ${color}44`;
+  document.getElementById('topbar-nm').textContent=fullName(CU);
+  closeModal();toast('Profil zaktualizowany');showPanel('coord-settings');
+}
+
+
 function renderNotifications(){
   const pendingAcc=CU.role==='coordinator'?DB.pendingAccounts.filter(p=>p.svId===CU.id):[];
   const rejected=CU.role==='ambassador'?DB.actions.filter(a=>a.ambassadorId===CU.id&&a.status==='rejected'):[];
